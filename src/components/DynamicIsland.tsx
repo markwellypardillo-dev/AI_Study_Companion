@@ -513,13 +513,9 @@ export default function DynamicIsland({
         animate={{ opacity: 1 }}
         className="w-full h-full flex items-center justify-between px-1 text-zinc-650 dark:text-zinc-400 text-[10px] font-black uppercase tracking-wider select-none font-sans"
       >
-        <span className={`flex items-center gap-1 ${progress.dailyStreak > 0 ? "text-amber-600 dark:text-amber-500" : "text-brand-indigo"}`}>
-          {progress.dailyStreak > 0 ? (
-            <Flame className="w-3.5 h-3.5 fill-amber-600 dark:fill-amber-500 animate-pulse" />
-          ) : (
-            <Sparkles className="w-3.5 h-3.5 fill-brand-indigo animate-pulse" />
-          )}
-          {progress.dailyStreak > 0 ? `${progress.dailyStreak}D Streak` : "Companion Desk"}
+        <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500">
+          <Flame className="w-3.5 h-3.5 fill-amber-600 dark:fill-amber-500 animate-pulse" />
+          {progress.dailyStreak}D Streak
         </span>
         <span className="text-zinc-500 dark:text-zinc-500 font-mono text-[9px] tracking-widest">
           LVL {progress.level}
