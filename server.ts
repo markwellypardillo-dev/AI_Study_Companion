@@ -535,6 +535,7 @@ async function startServer() {
         io.to(recipient.socketId).emit("direct-message", {
           id: Math.random().toString(36).substring(2, 9),
           fromId,
+          toId,
           fromName,
           message,
           timestamp: Date.now()

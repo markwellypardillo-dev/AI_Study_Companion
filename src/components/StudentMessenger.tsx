@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MessageSquare, X, Send, User } from "lucide-react";
-import { CompanionStudent, subscribeToMessages, sendDirectMessage, DirectMessage, getClientUid, sendTypingStatus, subscribeToTyping } from "../lib/socketPresence";
+import { CompanionStudent, subscribeToMessages, sendDirectMessage, DirectMessage, getClientUid, sendTypingStatus, subscribeToTyping, sessionMessageHistory } from "../lib/socketPresence";
 
 interface StudentMessengerProps {
   companion: CompanionStudent;
@@ -8,7 +8,9 @@ interface StudentMessengerProps {
 }
 
 export default function StudentMessenger({ companion, onClose }: StudentMessengerProps) {
-  const [messages, setMessages] = useState<DirectMessage[]>([]);
+  const [messages, setMessages] = useState<DirectMessage[]>(() => {
+    return sessionMessageHistory.filter(msg => msg.fromId === companion.id || msg.toId === companion.id).sort((a, b) => a.timestamp - b.timestamp);
+  });
   const [inputValue, setInputValue] = useState("");
   const [isCompanionTyping, setIsCompanionTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,6 +67,7 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
     const newMsg: DirectMessage = {
       id: Math.random().toString(36).substring(2, 9),
       fromId: myId,
+      toId: companion.id,
       fromName: "You",
       message: inputValue.trim(),
       timestamp: Date.now()

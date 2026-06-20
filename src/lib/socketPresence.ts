@@ -166,6 +166,7 @@ export const initGlobalPresence = (user?: any) => {
   });
 
   globalSocket.on("direct-message", (msg: any) => {
+    sessionMessageHistory.push(msg);
     messageListeners.forEach(l => l(msg));
   });
 
@@ -249,11 +250,13 @@ export const rerollIdentity = () => {
 export interface DirectMessage {
   id: string;
   fromId: string;
+  toId?: string;
   fromName: string;
   message: string;
   timestamp: number;
 }
 
+export const sessionMessageHistory: DirectMessage[] = [];
 let messageListeners: Array<(msg: DirectMessage) => void> = [];
 let typingListeners: Array<(data: { fromId: string, isTyping: boolean }) => void> = [];
 
@@ -275,6 +278,15 @@ export const sendDirectMessage = (toId: string, message: string) => {
   if (globalSocket && globalSocket.connected) {
     const clientUid = getClientUid();
     const userIdentity = getUserIdentity();
+    const msgObj = {
+      id: Math.random().toString(36).substring(2, 9),
+      toId,
+      fromId: clientUid,
+      fromName: userIdentity,
+      message,
+      timestamp: Date.now()
+    };
+    sessionMessageHistory.push(msgObj as DirectMessage);
     globalSocket.emit("send-direct-message", {
       toId,
       fromId: clientUid,
