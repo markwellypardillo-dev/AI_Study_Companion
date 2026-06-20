@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MessageSquare, X, Send, User } from "lucide-react";
+import { MessageSquare, X, Send, User, Reply } from "lucide-react";
 import { CompanionStudent, subscribeToMessages, sendDirectMessage, DirectMessage, getClientUid, sendTypingStatus, subscribeToTyping, sessionMessageHistory, getUserIdentity } from "../lib/socketPresence";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
@@ -13,6 +13,7 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
     return sessionMessageHistory.filter(msg => msg.fromId === companion.id || msg.toId === companion.id).sort((a, b) => a.timestamp - b.timestamp);
   });
   const [inputValue, setInputValue] = useState("");
+  const [replyingTo, setReplyingTo] = useState<DirectMessage | null>(null);
   const [isCompanionTyping, setIsCompanionTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -108,18 +109,26 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
     
     // Optimistic local add
     const myName = getUserIdentity();
+    
+    let finalMessageText = inputValue.trim();
+    if (replyingTo) {
+      const snippet = replyingTo.message.length > 50 ? replyingTo.message.substring(0, 50) + "..." : replyingTo.message;
+      finalMessageText = `↳ Replying to ${replyingTo.fromName}:\n"${snippet}"\n\n${finalMessageText}`;
+    }
+
     const newMsg: DirectMessage = {
       id: Math.random().toString(36).substring(2, 9),
       fromId: myId,
       toId: companion.id,
       fromName: myName || "You",
-      message: inputValue.trim(),
+      message: finalMessageText,
       timestamp: Date.now()
     };
     
     setMessages(prev => [...prev, newMsg]);
-    sendDirectMessage(companion.id, inputValue.trim());
+    sendDirectMessage(companion.id, finalMessageText);
     setInputValue("");
+    setReplyingTo(null);
 
     if (isSupabaseConfigured) {
       supabase.from('direct_messages').insert([{
@@ -172,15 +181,24 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
           messages.map((msg, i) => {
             const isMe = msg.fromId === getClientUid();
             return (
-              <div key={msg.id || i} className={`flex flex-col max-w-[85%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"}`}>
-                <div 
-                  className={`px-3 py-2 rounded-2xl text-xs shadow-sm backdrop-blur-md border ${
-                    isMe 
-                      ? "bg-brand-indigo/90 text-white border-brand-indigo/50 rounded-br-sm" 
-                      : "bg-white/80 dark:bg-zinc-800/80 text-black dark:text-white border-white/50 dark:border-white/10 rounded-bl-sm"
-                  }`}
-                >
-                  {msg.message}
+              <div key={msg.id || i} className={`group flex flex-col max-w-[85%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"}`}>
+                <div className={`flex items-center gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                  <div 
+                    className={`px-3 py-2 rounded-2xl text-xs shadow-sm backdrop-blur-md border whitespace-pre-wrap ${
+                      isMe 
+                        ? "bg-brand-indigo/90 text-white border-brand-indigo/50 rounded-br-sm" 
+                        : "bg-white/80 dark:bg-zinc-800/80 text-black dark:text-white border-white/50 dark:border-white/10 rounded-bl-sm"
+                    }`}
+                  >
+                    {msg.message}
+                  </div>
+                  <button 
+                    onClick={() => setReplyingTo(msg)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 shrink-0 shadow-sm border border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 bg-white/50 dark:bg-zinc-800/50"
+                    title="Reply"
+                  >
+                    <Reply className="w-3 h-3" />
+                  </button>
                 </div>
                 <span className="text-[9px] text-zinc-500 mt-1 px-1">
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -202,8 +220,27 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-zinc-100/80 dark:bg-zinc-900 border-t border-zinc-200 dark:border-white/10 shrink-0">
-        <form onSubmit={handleSend} className="flex items-center gap-2">
+      <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900 border-t border-zinc-200 dark:border-white/10 shrink-0">
+        {replyingTo && (
+          <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200/50 dark:border-zinc-700/50 transition-all animate-in slide-in-from-bottom-2">
+            <div className="flex items-start flex-col overflow-hidden max-w-[85%]">
+               <span className="text-[10px] font-bold text-brand-indigo flex items-center gap-1.5 mb-0.5">
+                 <Reply className="w-3 h-3.5" /> Replying to {replyingTo.fromName}
+               </span>
+               <span className="text-[11px] text-zinc-600 dark:text-zinc-400 truncate w-full pl-4 border-l-[3px] border-brand-indigo/30">
+                 {replyingTo.message}
+               </span>
+            </div>
+            <button 
+              onClick={() => setReplyingTo(null)} 
+              className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-white bg-zinc-200/50 dark:bg-zinc-700/50 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
+            >
+               <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+        <div className="p-3">
+          <form onSubmit={handleSend} className="flex items-center gap-2">
           <input
             type="text"
             value={inputValue}
@@ -219,6 +256,7 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
             <Send className="w-4 h-4 ml-0.5" />
           </button>
         </form>
+        </div>
       </div>
     </div>
   );
