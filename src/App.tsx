@@ -72,6 +72,7 @@ import confetti from "canvas-confetti";
 import { PRELOADED_SUBJECTS } from "./data/preloadedSubjects";
 
 const LOCAL_STORAGE_PROGRESS_KEY = "ai_study_companion_progress";
+import { initGlobalPresence, forceUpdatePresence } from "./lib/socketPresence";
 
 const getLocalISOString = (d: Date) => {
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -180,25 +181,16 @@ const ACHIEVEMENTS: AchievementDefinition[] = [
 ];
 
 const INITIAL_PROGRESS: UserProgress = {
-  xp: 150,
+  xp: 0,
   level: 1,
   xpToNextLevel: 1000,
   dailyStreak: 0,
   lastActiveDate: new Date().toISOString(),
-  totalFocusSeconds: 1500, // Preloaded focus minutes for demo styling
-  quizHistory: [
-    {
-      id: "pre-1",
-      fileName: "Biology 101 - Mitochondria.txt",
-      score: 4,
-      total: 5,
-      difficulty: "basic",
-      date: "2026-06-11"
-    }
-  ],
-  masteredTermsCount: 2,
-  completedStudiesCount: 1,
-  unlockedAchievements: ["first_upload", "focus_1"]
+  totalFocusSeconds: 0,
+  quizHistory: [],
+  masteredTermsCount: 0,
+  completedStudiesCount: 0,
+  unlockedAchievements: []
 };
 
 export default function App() {
@@ -209,12 +201,26 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [isGuestMode, setIsGuestMode] = useState<boolean>(false);
 
+  useEffect(() => {
+    localStorage.setItem("ai_study_companion_active_tab", activeMode);
+    forceUpdatePresence(user);
+  }, [activeMode, user]);
+
+  useEffect(() => {
+    initGlobalPresence(user);
+  }, [user]);
+
   // Document extraction variables
   const [fileName, setFileName] = useState<string>("");
   const [fileContent, setFileContent] = useState<string>("");
   const [guideData, setGuideData] = useState<StudyGuideData | null>(null);
   const [isGeneratingGuide, setIsGeneratingGuide] = useState<boolean>(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("ai_study_companion_active_file", fileName);
+    forceUpdatePresence(user);
+  }, [fileName, user]);
 
   // Infinite upload quota queuing system states
   const [isQuotaQueue, setIsQuotaQueue] = useState<boolean>(false);
@@ -232,6 +238,13 @@ export default function App() {
   const [timeLeft, setTimeLeft] = useState<number>(25 * 60);
   const [timerIsRunning, setTimerIsRunning] = useState<boolean>(false);
 
+  useEffect(() => {
+    localStorage.setItem("ai_study_companion_timer_running", timerIsRunning ? "true" : "false");
+    localStorage.setItem("ai_study_companion_timer_mode", timerMode);
+    // Add small delay to let DOM settle if it's still being read in some places
+    setTimeout(() => forceUpdatePresence(user), 100);
+  }, [timerIsRunning, timerMode, user]);
+
   // Periodic study/focus notifications tracker seconds
   const [activeSeconds, setActiveSeconds] = useState<number>(0);
   const [notificationIntervalType, setNotificationIntervalType] = useState<"demo" | "standard">("standard");
@@ -248,6 +261,13 @@ export default function App() {
   const [musicIsMuted, setMusicIsMuted] = useState<boolean>(false);
   const [musicSynthType, setMusicSynthType] = useState<"40hz" | "pink" | null>(null);
   const [musicError, setMusicError] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("ai_study_companion_music_playing", musicIsPlaying ? "true" : "false");
+    const track = musicTracks.find(t => t.id === selectedTrackId);
+    localStorage.setItem("ai_study_companion_track_name", track ? track.name : "Focus Music");
+    forceUpdatePresence(user);
+  }, [musicIsPlaying, selectedTrackId, musicTracks, user]);
 
   // Enhancement: Sleep/Snooze timer for focus music
   const [sleepTimerMinutes, setSleepTimerMinutes] = useState<number | null>(null);

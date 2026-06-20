@@ -1,20 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Users, Shuffle, Sparkles, User, Flame, GraduationCap, Edit2, Check, X, Wifi } from "lucide-react";
-import { io, Socket } from "socket.io-client";
-
-interface CompanionStudent {
-  id: string;
-  name: string;
-  subject: string;
-  mode: string;
-  isOnline?: boolean;
-  streak: number;
-  level: number;
-  minutesStudied?: number;
-  avatarChar: string;
-  socketId?: string;
-  lastSeen?: number;
-}
+import { 
+  CompanionStudent, 
+  subscribeToPresence, 
+  getUserIdentity, 
+  renameUserIdentity, 
+  rerollIdentity
+} from "../lib/socketPresence";
 
 const FIRST_NAMES = [
   "Silas", "Evelyn", "Kaelen", "Maeve", "Cyrus", "Aria", "Julian", "Clara", "Félix", "Nico", 
@@ -35,65 +27,27 @@ const SUBJECTS = [
 ];
 
 export default function StudyLounge({ user }: { user?: any }) {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  
-  // Stable client UI identifier
-  const [clientUid] = useState<string>(() => {
-    let cached = localStorage.getItem("ai_study_companion_client_uid");
-    if (!cached) {
-      cached = "u_" + Math.random().toString(36).substring(2, 11);
-      localStorage.setItem("ai_study_companion_client_uid", cached);
-    }
-    return cached;
-  });
-
-  // Current user's identity name
-  const [userIdentity, setUserIdentity] = useState<string>(() => {
-    let cached = localStorage.getItem("ai_study_companion_user_identity");
-    let isManual = localStorage.getItem("ai_study_companion_identity_is_manual") === "true";
-    
-    // If we have an authenticated user and hasn't manually renamed, prefer their name/email over cached generated names
-    if (user && !isManual) {
-      const derivedName = user.user_metadata?.name || user.email?.split('@')[0];
-      if (derivedName) {
-        localStorage.setItem("ai_study_companion_user_identity", derivedName);
-        return derivedName;
-      }
-    }
-
-    if (cached) return cached;
-    
-    const generated = `Scholar_student${Math.floor(Math.random() * 900) + 100}`;
-    localStorage.setItem("ai_study_companion_user_identity", generated);
-    return generated;
-  });
-
+  const [userIdentity, setUserIdentity] = useState<string>(() => getUserIdentity(user));
   const [companions, setCompanions] = useState<CompanionStudent[]>([]);
   const [activeCount, setActiveCount] = useState<number>(1);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  // Synchronize identity if user logs in during session
   useEffect(() => {
-    let isManual = localStorage.getItem("ai_study_companion_identity_is_manual") === "true";
-    if (user && !isManual) {
-      const derivedName = user.user_metadata?.name || user.email?.split('@')[0];
-      if (derivedName && derivedName !== userIdentity) {
-        setUserIdentity(derivedName);
-        localStorage.setItem("ai_study_companion_user_identity", derivedName);
-        
-        // Also update the presence immediately
-        if (socket && isConnected) {
-          socket.emit("update-presence", {
-            id: clientUid,
-            name: derivedName,
-            ...getActiveStudyMetadata(),
-            ...getProgressInfo(),
-            avatarChar: derivedName.charAt(derivedName.indexOf("_") + 1) || derivedName.charAt(0) || "S"
-          });
-        }
-      }
+    const unsub = subscribeToPresence((newCompanions, newCount, newIsConnected) => {
+      setCompanions(newCompanions);
+      setActiveCount(newCount);
+      setIsConnected(newIsConnected);
+    });
+    return unsub;
+  }, []);
+
+  // Update local userIdentity whenever user logs in or re-syncs
+  useEffect(() => {
+    const currentId = getUserIdentity(user);
+    if (currentId !== userIdentity) {
+      setUserIdentity(currentId);
     }
-  }, [user, isConnected, socket]);
+  }, [user]);
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editInputValue, setEditInputValue] = useState<string>("");
@@ -107,19 +61,7 @@ export default function StudyLounge({ user }: { user?: any }) {
     const trimmed = editInputValue.trim();
     if (trimmed) {
       setUserIdentity(trimmed);
-      localStorage.setItem("ai_study_companion_user_identity", trimmed);
-      localStorage.setItem("ai_study_companion_identity_is_manual", "true");
-      
-      // Update socket presence immediately
-      if (socket) {
-        socket.emit("update-presence", {
-          id: clientUid,
-          name: trimmed,
-          ...getActiveStudyMetadata(),
-          ...getProgressInfo(),
-          avatarChar: trimmed.charAt(trimmed.indexOf("_") + 1) || trimmed.charAt(0) || "S"
-        });
-      }
+      renameUserIdentity(trimmed);
     }
     setIsEditing(false);
   };
@@ -127,116 +69,11 @@ export default function StudyLounge({ user }: { user?: any }) {
   const cancelEditing = () => setIsEditing(false);
 
   const handleRerollIdentity = () => {
-    const num = Math.floor(Math.random() * 90) + 10;
-    const newIdentity = `Scholar_student${num}`;
+    const newIdentity = rerollIdentity();
     setUserIdentity(newIdentity);
-    localStorage.setItem("ai_study_companion_user_identity", newIdentity);
-    localStorage.setItem("ai_study_companion_identity_is_manual", "true");
     setIsEditing(false);
-    
-    // Update socket presence immediately
-    if (socket) {
-      socket.emit("update-presence", {
-        id: clientUid,
-        name: newIdentity,
-        ...getActiveStudyMetadata(),
-        ...getProgressInfo(),
-        avatarChar: newIdentity.charAt(newIdentity.indexOf("_") + 1) || newIdentity.charAt(0) || "S"
-      });
-    }
   };
 
-  const getActiveStudyMetadata = () => {
-    let activeSubject = "Organic Chemistry 🧪";
-    let activeMode = "Deep Focus Session 🎧";
-
-    const rawProgress = localStorage.getItem("ai_study_companion_progress");
-    if (rawProgress) {
-      try {
-        const parsed = JSON.parse(rawProgress);
-        if (parsed.quizHistory && parsed.quizHistory.length > 0) {
-          activeSubject = parsed.quizHistory[parsed.quizHistory.length - 1].fileName || "Organic Chemistry 🧪";
-        }
-      } catch (err) {}
-    }
-
-    const timerState = document.querySelector("#btn-toggle-pomodoro");
-    if (timerState && timerState.textContent?.toLowerCase().includes("pause")) {
-      activeMode = "Deep Focus Session 🎧";
-    } else {
-      activeMode = "Taking a Lofi Break ☕";
-    }
-
-    return { subject: activeSubject, mode: activeMode };
-  };
-
-  const getProgressInfo = () => {
-    const raw = localStorage.getItem("ai_study_companion_progress");
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        return { level: parsed.level || 1, streak: parsed.dailyStreak || 0 };
-      } catch (err) {}
-    }
-    return { level: 1, streak: 0 };
-  };
-
-  // Real-time Socket Connection
-  useEffect(() => {
-    const newSocket = io(); // Connects to the host automatically
-    setSocket(newSocket);
-
-    newSocket.on("connect", () => {
-      setIsConnected(true);
-      const metadata = getActiveStudyMetadata();
-      const info = getProgressInfo();
-      newSocket.emit("join-lounge", {
-        id: clientUid,
-        name: userIdentity,
-        subject: metadata.subject,
-        mode: metadata.mode,
-        streak: info.streak,
-        level: info.level,
-        avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S"
-      });
-    });
-
-    newSocket.on("lounge-update", (allActivePresence: CompanionStudent[]) => {
-      const others = allActivePresence.filter(p => p.id !== clientUid);
-      setCompanions(others);
-      setActiveCount(allActivePresence.length);
-    });
-
-    newSocket.on("disconnect", () => {
-      setIsConnected(false);
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [clientUid]); // Run once on mount
-
-  // Periodic heartbeat sync for current activity state
-  useEffect(() => {
-    if (!socket || !isConnected) return;
-    
-    const interval = setInterval(() => {
-      const metadata = getActiveStudyMetadata();
-      const info = getProgressInfo();
-      socket.emit("update-presence", {
-        id: clientUid,
-        name: userIdentity,
-        subject: metadata.subject,
-        mode: metadata.mode,
-        streak: info.streak,
-        level: info.level,
-        avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S"
-      });
-    }, 10000); // 10s heartbeat
-
-    return () => clearInterval(interval);
-  }, [socket, isConnected, clientUid, userIdentity]);
-  
   return (
     <div 
       id="study-lounge-card" 

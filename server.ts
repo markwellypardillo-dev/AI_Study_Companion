@@ -502,13 +502,28 @@ async function startServer() {
       
       const existing = activePresenceMap.get(id);
       if (existing) {
+        existing.name = name || existing.name;
         existing.subject = subject || existing.subject;
         existing.mode = mode || existing.mode;
+        existing.streak = Number(streak) || existing.streak;
+        existing.level = Number(level) || existing.level;
+        existing.avatarChar = avatarChar || existing.avatarChar;
         existing.lastSeen = Date.now();
         existing.socketId = socket.id;
-        
-        io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
+      } else {
+        activePresenceMap.set(id, {
+          id,
+          name: name || "Scholar",
+          subject: subject || "Study Session 📚",
+          mode: mode || "Focusing 🎧",
+          streak: Number(streak) || 1,
+          level: Number(level) || 1,
+          avatarChar: avatarChar || "S",
+          lastSeen: Date.now(),
+          socketId: socket.id
+        });
       }
+      io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
     });
 
     socket.on("disconnect", () => {
