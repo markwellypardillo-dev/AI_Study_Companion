@@ -119,13 +119,23 @@ export default function DynamicIsland({
       const isAchievement = activeNotification.type === "achievement";
       const isLevelUp = activeNotification.type === "levelUp";
 
+      const handleActionClick = (e: React.MouseEvent) => {
+        if (activeNotification.action) {
+          window.dispatchEvent(
+            new CustomEvent(`${activeNotification.action}-action`, { detail: activeNotification.actionPayload })
+          );
+          handleDismissNotification(activeNotification.id, e);
+        }
+      };
+
       return (
         <motion.div
           key="notification"
           initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="w-full h-full flex flex-col justify-between"
+          className={`w-full h-full flex flex-col justify-between ${activeNotification.action ? "cursor-pointer group" : ""}`}
+          onClick={handleActionClick}
         >
           <div className="flex items-start justify-between gap-3 text-left font-sans">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg select-none shrink-0 ${

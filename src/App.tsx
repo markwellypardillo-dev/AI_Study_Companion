@@ -86,6 +86,8 @@ export interface NotificationInfo {
   type: "achievement" | "reminder" | "levelUp" | "info";
   badge?: string;
   xpReward?: number;
+  action?: string;
+  actionPayload?: any;
 }
 
 interface AchievementDefinition {

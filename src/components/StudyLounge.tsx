@@ -49,7 +49,9 @@ export default function StudyLounge({ user }: { user?: any }) {
                 title: `New message from ${msg.fromName}`,
                 description: msg.message,
                 type: "reminder",
-                badge: "💬 Chat"
+                badge: "💬 Chat",
+                action: "open-chat",
+                actionPayload: { companionId: msg.fromId, companionName: msg.fromName }
               }
             })
           );
@@ -77,6 +79,29 @@ export default function StudyLounge({ user }: { user?: any }) {
       setUserIdentity(currentId);
     }
   }, [user]);
+
+  useEffect(() => {
+    const handleOpenChatAction = (e: any) => {
+      const { companionId, companionName } = e.detail;
+      const comp = companions.find((c) => c.id === companionId);
+      if (comp) {
+        setActiveChatCompanion(comp);
+      } else {
+        setActiveChatCompanion({
+          id: companionId,
+          name: companionName || "Unknown",
+          subject: "Unknown",
+          mode: "focus",
+          streak: 0,
+          level: 1,
+          avatarChar: (companionName || "?").charAt(0).toUpperCase(),
+          isOnline: true
+        });
+      }
+    };
+    window.addEventListener("open-chat-action", handleOpenChatAction);
+    return () => window.removeEventListener("open-chat-action", handleOpenChatAction);
+  }, [companions]);
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editInputValue, setEditInputValue] = useState<string>("");

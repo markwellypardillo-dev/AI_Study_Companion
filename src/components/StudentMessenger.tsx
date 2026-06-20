@@ -76,30 +76,34 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-72 backdrop-blur-xl bg-white/60 dark:bg-[#1a1c23]/80 border border-white/40 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col font-sans overflow-hidden z-[100] h-[380px] origin-bottom-right animate-in fade-in zoom-in duration-200">
+    <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 w-[300px] sm:w-[320px] bg-white dark:bg-[#1a1c23] border border-zinc-200 dark:border-white/10 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex flex-col font-sans overflow-hidden z-[99999] h-[400px] md:h-[450px] origin-bottom-right animate-in fade-in zoom-in duration-200">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-zinc-900 flex items-center justify-between shrink-0 relative z-20">
+        <div className="flex items-center gap-3">
           <div className="relative">
-             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-indigo to-violet-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-indigo to-violet-500 text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white dark:ring-[#1a1c23]">
                 {companion.avatarChar}
              </div>
-             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#1a1c23] rounded-full" />
+             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#1a1c23] rounded-full z-10" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-xs text-black dark:text-white truncate max-w-[120px]">
+            <span className="font-extrabold text-sm text-zinc-900 dark:text-white truncate max-w-[160px] drop-shadow-sm">
               {companion.name}
             </span>
-            <span className="text-[10px] text-zinc-500 font-medium">Active Now</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Active Now</span>
           </div>
         </div>
-        <button onClick={onClose} className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors text-zinc-500">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onClose(); }} 
+          className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-600 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm cursor-pointer z-50 shrink-0"
+          aria-label="Close Chat"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 scroller-hidden bg-white/20 dark:bg-black/10">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scroller-hidden bg-zinc-50/50 dark:bg-black/20">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center opacity-50 space-y-2">
             <MessageSquare className="w-8 h-8 text-brand-indigo" />
@@ -139,21 +143,21 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-white/40 dark:bg-black/40 border-t border-black/5 dark:border-white/10 shrink-0">
+      <div className="p-3 bg-zinc-100/80 dark:bg-zinc-900 border-t border-zinc-200 dark:border-white/10 shrink-0">
         <form onSubmit={handleSend} className="flex items-center gap-2">
           <input
             type="text"
             value={inputValue}
             onChange={handleInputChange}
             placeholder="Write a message..."
-            className="flex-1 bg-white/50 dark:bg-black/50 border border-black/10 dark:border-white/10 rounded-full px-3 py-1.5 text-xs focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-black dark:text-white placeholder:text-zinc-500 transition-all"
+            className="flex-1 bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-zinc-900 dark:text-white placeholder:text-zinc-500 transition-all font-medium shadow-inner"
           />
           <button 
             type="submit" 
             disabled={!inputValue.trim()}
-            className="w-7 h-7 rounded-full bg-brand-indigo text-white flex items-center justify-center disabled:opacity-50 transition-opacity flex-shrink-0"
+            className="w-9 h-9 rounded-full bg-brand-indigo text-white flex items-center justify-center disabled:opacity-50 transition-opacity flex-shrink-0 shadow-md"
           >
-            <Send className="w-3.5 h-3.5 ml-0.5" />
+            <Send className="w-4 h-4 ml-0.5" />
           </button>
         </form>
       </div>
