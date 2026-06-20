@@ -35,6 +35,7 @@ interface JournalEntry {
 }
 
 interface DashboardProps {
+  user?: any;
   progress: UserProgress;
   onFocusComplete: (minutes: number) => void;
   onResetProgress: () => void;
@@ -73,6 +74,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({
+  user,
   progress,
   onFocusComplete,
   onResetProgress,
@@ -916,7 +918,7 @@ export default function Dashboard({
           journalCount={journalEntries.length} 
         />
 
-        <StudyLounge />
+        <StudyLounge user={user} />
 
         {/* Quick motivational cards */}
         <div className="bg-brand-indigo/10 border border-brand-indigo/20 rounded-2xl p-4.5 flex gap-3 text-brand-indigo">

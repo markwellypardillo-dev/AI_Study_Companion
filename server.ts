@@ -173,6 +173,7 @@ interface ScholarPresence {
   level: number;
   avatarChar: string;
   lastSeen: number;
+  socketId?: string;
 }
 
 const activePresenceMap = new Map<string, ScholarPresence>();
@@ -462,6 +463,85 @@ Return a list of strictly grounded questions in a JSON array.
 
 async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  
+  const http = await import("http");
+  const httpServer = http.createServer(app);
+  
+  const { Server } = await import("socket.io");
+  const io = new Server(httpServer, {
+    cors: { origin: "*" }
+  });
+
+  io.on("connection", (socket) => {
+    console.log(`[Socket.io] Client connected: ${socket.id}`);
+
+    socket.on("join-lounge", (data) => {
+      const { id, name, subject, mode, streak, level, avatarChar } = data;
+      if (!id) return;
+      
+      activePresenceMap.set(id, {
+        id,
+        name: name || "Scholar",
+        subject: subject || "Study Session 📚",
+        mode: mode || "Deep Focus Session 🎧",
+        streak: Number(streak) || 1,
+        level: Number(level) || 1,
+        avatarChar: avatarChar || "S",
+        lastSeen: Date.now(),
+        socketId: socket.id
+      });
+
+      socket.join("lounge");
+      const companions = Array.from(activePresenceMap.values()).filter(p => p.id !== id);
+      io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
+    });
+
+    socket.on("update-presence", (data) => {
+      const { id, name, subject, mode, streak, level, avatarChar } = data;
+      if (!id) return;
+      
+      const existing = activePresenceMap.get(id);
+      if (existing) {
+        existing.subject = subject || existing.subject;
+        existing.mode = mode || existing.mode;
+        existing.lastSeen = Date.now();
+        existing.socketId = socket.id;
+        
+        io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
+      }
+    });
+
+    socket.on("disconnect", () => {
+      let disconnectedId = null;
+      for (const [key, val] of activePresenceMap.entries()) {
+        if (val.socketId === socket.id) {
+          disconnectedId = key;
+          activePresenceMap.delete(key);
+          break;
+        }
+      }
+      
+      if (disconnectedId) {
+        io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
+      }
+      console.log(`[Socket.io] Client disconnected: ${socket.id}`);
+    });
+  });
+
+  // Background cleanup task for stale connections
+  setInterval(() => {
+    const cutoff = Date.now() - 30000;
+    let changed = false;
+    for (const [key, val] of activePresenceMap.entries()) {
+      if (val.lastSeen < cutoff && !val.socketId) {
+        activePresenceMap.delete(key);
+        changed = true;
+      }
+    }
+    if (changed) {
+      io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
+    }
+  }, 15000);
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -477,8 +557,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server is running on port ${PORT}`);
+  httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server is running on port ${PORT} with WebSocket supported`);
   });
 }
 

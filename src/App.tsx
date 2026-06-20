@@ -1437,6 +1437,7 @@ export default function App() {
             {activeMode === "dashboard" && (
               <div className="space-y-4">
                 <Dashboard
+                  user={user}
                   progress={progress}
                   onFocusComplete={handleFocusComplete}
                   onResetProgress={resetAllProgressData}

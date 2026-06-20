@@ -1,26 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { Users, Shuffle, Sparkles, User, Flame, GraduationCap, Edit2, Check, X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Users, Shuffle, Sparkles, User, Flame, GraduationCap, Edit2, Check, X, Wifi } from "lucide-react";
+import { io, Socket } from "socket.io-client";
 
 interface CompanionStudent {
   id: string;
   name: string;
   subject: string;
   mode: string;
-  isOnline: boolean;
+  isOnline?: boolean;
   streak: number;
   level: number;
-  minutesStudied: number;
+  minutesStudied?: number;
   avatarChar: string;
+  socketId?: string;
+  lastSeen?: number;
 }
 
 const FIRST_NAMES = [
   "Silas", "Evelyn", "Kaelen", "Maeve", "Cyrus", "Aria", "Julian", "Clara", "Félix", "Nico", 
   "Iris", "Atlas", "Aurelia", "Orion", "Zelda", "Vesper", "Sienna", "Elias", "Gideon", "Lyra"
-];
-
-const LAST_NAMES = [
-  "Thorne", "Sterling", "Vance", "Finch", "Brooks", "Hale", "Mercer", "Rousseau", "Kingsley", "Wyatt",
-  "Hawthorne", "Lovelace", "Somerset", "Sinclair", "Belmont", "Wilder", "Sutton", "Beckett", "Drake"
 ];
 
 const SUBJECTS = [
@@ -36,35 +34,9 @@ const SUBJECTS = [
   "Deep Learning Architectures 🤖"
 ];
 
-const MODES = [
-  "Crushing a Live Quiz 🧠",
-  "Deep Focus Session 🎧",
-  "Taking a Lofi Break ☕",
-  "Writing Session Log ✍️",
-  "Reciting Flashcards 🎴",
-  "Reviewing Lecture Notes 📚"
-];
-
-function generateRandomStudent(): CompanionStudent {
-  const f = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
-  const num = Math.floor(Math.random() * 90) + 10;
-  const name = `Scholar_${f}${num}`;
-  const subject = SUBJECTS[Math.floor(Math.random() * SUBJECTS.length)];
-  const mode = MODES[Math.floor(Math.random() * MODES.length)];
-  return {
-    id: Math.random().toString(36).substr(2, 9),
-    name,
-    subject,
-    mode,
-    isOnline: true,
-    streak: Math.floor(Math.random() * 8) + 1,
-    level: Math.floor(Math.random() * 12) + 2,
-    minutesStudied: Math.floor(Math.random() * 150) + 20,
-    avatarChar: f[0]
-  };
-}
-
-export default function StudyLounge() {
+export default function StudyLounge({ user }: { user?: any }) {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  
   // Stable client UI identifier
   const [clientUid] = useState<string>(() => {
     let cached = localStorage.getItem("ai_study_companion_client_uid");
@@ -75,24 +47,53 @@ export default function StudyLounge() {
     return cached;
   });
 
-  // Stable simulated companions
-  const [simulatedCompanions] = useState<CompanionStudent[]>(() => {
-    return Array.from({ length: 4 }).map(() => generateRandomStudent());
-  });
-
   // Current user's identity name
   const [userIdentity, setUserIdentity] = useState<string>(() => {
-    const cached = localStorage.getItem("ai_study_companion_user_identity");
+    let cached = localStorage.getItem("ai_study_companion_user_identity");
+    let isManual = localStorage.getItem("ai_study_companion_identity_is_manual") === "true";
+    
+    // If we have an authenticated user and hasn't manually renamed, prefer their name/email over cached generated names
+    if (user && !isManual) {
+      const derivedName = user.user_metadata?.name || user.email?.split('@')[0];
+      if (derivedName) {
+        localStorage.setItem("ai_study_companion_user_identity", derivedName);
+        return derivedName;
+      }
+    }
+
     if (cached) return cached;
-    // Generate initial friendly scholarly alias
-    const randomInitial = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
-    const generated = `Scholar_${randomInitial}${Math.floor(Math.random() * 900) + 100}`;
+    
+    const generated = `Scholar_student${Math.floor(Math.random() * 900) + 100}`;
     localStorage.setItem("ai_study_companion_user_identity", generated);
     return generated;
   });
 
   const [companions, setCompanions] = useState<CompanionStudent[]>([]);
-  const [activeCount, setActiveCount] = useState<number>(4);
+  const [activeCount, setActiveCount] = useState<number>(1);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+
+  // Synchronize identity if user logs in during session
+  useEffect(() => {
+    let isManual = localStorage.getItem("ai_study_companion_identity_is_manual") === "true";
+    if (user && !isManual) {
+      const derivedName = user.user_metadata?.name || user.email?.split('@')[0];
+      if (derivedName && derivedName !== userIdentity) {
+        setUserIdentity(derivedName);
+        localStorage.setItem("ai_study_companion_user_identity", derivedName);
+        
+        // Also update the presence immediately
+        if (socket && isConnected) {
+          socket.emit("update-presence", {
+            id: clientUid,
+            name: derivedName,
+            ...getActiveStudyMetadata(),
+            ...getProgressInfo(),
+            avatarChar: derivedName.charAt(derivedName.indexOf("_") + 1) || derivedName.charAt(0) || "S"
+          });
+        }
+      }
+    }
+  }, [user, isConnected, socket]);
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editInputValue, setEditInputValue] = useState<string>("");
@@ -107,25 +108,44 @@ export default function StudyLounge() {
     if (trimmed) {
       setUserIdentity(trimmed);
       localStorage.setItem("ai_study_companion_user_identity", trimmed);
+      localStorage.setItem("ai_study_companion_identity_is_manual", "true");
+      
+      // Update socket presence immediately
+      if (socket) {
+        socket.emit("update-presence", {
+          id: clientUid,
+          name: trimmed,
+          ...getActiveStudyMetadata(),
+          ...getProgressInfo(),
+          avatarChar: trimmed.charAt(trimmed.indexOf("_") + 1) || trimmed.charAt(0) || "S"
+        });
+      }
     }
     setIsEditing(false);
   };
 
-  const cancelEditing = () => {
-    setIsEditing(false);
-  };
+  const cancelEditing = () => setIsEditing(false);
 
-  // Re-roll current student profile nickname
   const handleRerollIdentity = () => {
-    const fName = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
     const num = Math.floor(Math.random() * 90) + 10;
-    const newIdentity = `Scholar_${fName}${num}`;
+    const newIdentity = `Scholar_student${num}`;
     setUserIdentity(newIdentity);
     localStorage.setItem("ai_study_companion_user_identity", newIdentity);
+    localStorage.setItem("ai_study_companion_identity_is_manual", "true");
     setIsEditing(false);
+    
+    // Update socket presence immediately
+    if (socket) {
+      socket.emit("update-presence", {
+        id: clientUid,
+        name: newIdentity,
+        ...getActiveStudyMetadata(),
+        ...getProgressInfo(),
+        avatarChar: newIdentity.charAt(newIdentity.indexOf("_") + 1) || newIdentity.charAt(0) || "S"
+      });
+    }
   };
 
-  // Helper to extract active study topic & mode
   const getActiveStudyMetadata = () => {
     let activeSubject = "Organic Chemistry 🧪";
     let activeMode = "Deep Focus Session 🎧";
@@ -140,7 +160,6 @@ export default function StudyLounge() {
       } catch (err) {}
     }
 
-    // Detect if Pomodoro is active on DOM
     const timerState = document.querySelector("#btn-toggle-pomodoro");
     if (timerState && timerState.textContent?.toLowerCase().includes("pause")) {
       activeMode = "Deep Focus Session 🎧";
@@ -151,106 +170,107 @@ export default function StudyLounge() {
     return { subject: activeSubject, mode: activeMode };
   };
 
-  // Helper to parse overall user progress stats
   const getProgressInfo = () => {
     const raw = localStorage.getItem("ai_study_companion_progress");
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        return {
-          level: parsed.level || 1,
-          streak: parsed.dailyStreak || 0
-        };
+        return { level: parsed.level || 1, streak: parsed.dailyStreak || 0 };
       } catch (err) {}
     }
     return { level: 1, streak: 0 };
   };
 
-  // Regular presence polling to central server
+  // Real-time Socket Connection
   useEffect(() => {
-    const reportPresence = async () => {
-      try {
-        const metadata = getActiveStudyMetadata();
-        const info = getProgressInfo();
+    const newSocket = io(); // Connects to the host automatically
+    setSocket(newSocket);
 
-        const response = await fetch("/api/study-lounge/presence", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            id: clientUid,
-            name: userIdentity,
-            subject: metadata.subject,
-            mode: metadata.mode,
-            streak: info.streak,
-            level: info.level,
-            avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || "S"
-          })
-        });
+    newSocket.on("connect", () => {
+      setIsConnected(true);
+      const metadata = getActiveStudyMetadata();
+      const info = getProgressInfo();
+      newSocket.emit("join-lounge", {
+        id: clientUid,
+        name: userIdentity,
+        subject: metadata.subject,
+        mode: metadata.mode,
+        streak: info.streak,
+        level: info.level,
+        avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S"
+      });
+    });
 
-        if (response.ok) {
-          const data = await response.json();
-          let realCompanions = data.companions || [];
-          
-          // Mix in some simulated users to keep the lounge lively if it's empty
-          if (realCompanions.length < 3) {
-            const simulatedCount = 3 - realCompanions.length;
-            const simulated = simulatedCompanions.slice(0, simulatedCount);
-            realCompanions = [...realCompanions, ...simulated];
-          }
+    newSocket.on("lounge-update", (allActivePresence: CompanionStudent[]) => {
+      const others = allActivePresence.filter(p => p.id !== clientUid);
+      setCompanions(others);
+      setActiveCount(allActivePresence.length);
+    });
 
-          setCompanions(realCompanions);
-          setActiveCount(data.activeCount > realCompanions.length ? data.activeCount : realCompanions.length + 1);
-        } else {
-          // Fallback to simulated if the backend is down (e.g. static hosting)
-          setCompanions(simulatedCompanions);
-          setActiveCount(simulatedCompanions.length + 1);
-        }
-      } catch (err) {
-        console.warn("Backend Lounge sync fallback active:", err);
-        // Fallback to simulated if network error
-        setCompanions(simulatedCompanions);
-        setActiveCount(simulatedCompanions.length + 1);
-      }
+    newSocket.on("disconnect", () => {
+      setIsConnected(false);
+    });
+
+    return () => {
+      newSocket.disconnect();
     };
+  }, [clientUid]); // Run once on mount
 
-    reportPresence();
-    const interval = setInterval(reportPresence, 6000); // Poll presence details every 6 seconds
+  // Periodic heartbeat sync for current activity state
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+    
+    const interval = setInterval(() => {
+      const metadata = getActiveStudyMetadata();
+      const info = getProgressInfo();
+      socket.emit("update-presence", {
+        id: clientUid,
+        name: userIdentity,
+        subject: metadata.subject,
+        mode: metadata.mode,
+        streak: info.streak,
+        level: info.level,
+        avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S"
+      });
+    }, 10000); // 10s heartbeat
 
     return () => clearInterval(interval);
-  }, [clientUid, userIdentity]);
-
+  }, [socket, isConnected, clientUid, userIdentity]);
+  
   return (
-    <div id="study-lounge-card" className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4.5 shadow-sm space-y-3.5">
+    <div 
+      id="study-lounge-card" 
+      className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border border-white/40 dark:border-white/10 rounded-3xl p-4.5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] space-y-3.5 before:absolute before:inset-0 before:bg-gradient-to-br before:from-brand-indigo/10 before:to-transparent before:opacity-50 before:pointer-events-none"
+    >
       {/* Title Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-1.5">
-          <div className="p-0.5 px-1.5 bg-brand-indigo/10 text-brand-indigo rounded-lg text-[9px] font-black uppercase flex items-center gap-1 font-sans">
-            👥 Live Study Lounge
+          <div className="p-0.5 px-2 bg-brand-indigo/20 backdrop-blur-md text-brand-indigo dark:text-brand-indigo-light rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 font-sans border border-brand-indigo/20">
+            <Users className="w-3 h-3" /> Live Study Lounge
           </div>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          {isConnected ? (
+             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" title="Connected via WebSockets" />
+          ) : (
+             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Reconnecting..." />
+          )}
         </div>
-        <span className="text-[9px] font-mono text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
+        <span className="text-[9px] font-mono text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider backdrop-blur bg-white/30 dark:bg-black/30 px-2 py-0.5 rounded-full border border-white/20 dark:border-white/10">
           {activeCount} Active
         </span>
       </div>
 
-      <p className="text-[10px] text-ios-secondary-text leading-relaxed font-sans">
+      <p className="text-[10px] text-zinc-700 dark:text-zinc-300 leading-relaxed font-sans relative z-10 font-medium">
         Meet fellow scholars co-working and cracking materials with you in real-time.
       </p>
 
-      {/* Your Identity Block */}
-      <div className="p-2.5 bg-brand-indigo/5 border border-brand-indigo/15 rounded-xl flex items-center justify-between gap-2.5 font-sans min-h-[46px]">
+      {/* Your Identity Block - Glassmorphism */}
+      <div className="relative z-10 p-2.5 bg-white/50 dark:bg-black/30 backdrop-blur-lg border border-white/40 dark:border-white/10 shadow-inner rounded-xl flex items-center justify-between gap-2.5 font-sans min-h-[46px]">
         {isEditing ? (
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveIdentity();
-            }}
+            onSubmit={(e) => { e.preventDefault(); saveIdentity(); }}
             className="flex-1 flex items-center gap-2 min-w-0"
           >
-            <div className="w-7 h-7 rounded-lg bg-brand-indigo text-white flex items-center justify-center font-bold text-xxs shrink-0 shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-indigo to-violet-500 text-white flex items-center justify-center font-bold text-xxs shrink-0 shadow-lg border border-white/20">
               <User className="w-3.5 h-3.5 text-white" />
             </div>
             <div className="flex-1 min-w-0 flex items-center gap-1">
@@ -260,70 +280,48 @@ export default function StudyLounge() {
                 value={editInputValue}
                 onChange={(e) => setEditInputValue(e.target.value)}
                 maxLength={22}
-                className="flex-grow min-w-0 bg-transparent border-b border-brand-indigo focus:outline-none text-[11px] font-extrabold text-zinc-900 dark:text-zinc-100 p-0 leading-none h-5"
+                className="flex-grow min-w-0 bg-transparent border-b border-brand-indigo/50 focus:border-brand-indigo focus:outline-none text-[11px] font-extrabold text-zinc-900 dark:text-white p-0 h-5"
                 placeholder="New nickname..."
                 autoFocus
               />
-              <button
-                type="submit"
-                className="p-1 text-emerald-600 hover:bg-emerald-500/10 rounded-md transition-colors border-none bg-transparent cursor-pointer shrink-0"
-                title="Save"
-              >
-                <Check className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={cancelEditing}
-                className="p-1 text-zinc-400 hover:bg-zinc-500/10 rounded-md transition-colors border-none bg-transparent cursor-pointer shrink-0"
-                title="Cancel"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <button type="submit" className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 rounded-md transition-colors" title="Save"><Check className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={cancelEditing} className="p-1 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-500/20 rounded-md transition-colors" title="Cancel"><X className="w-3.5 h-3.5" /></button>
             </div>
           </form>
         ) : (
           <div className="flex-1 flex items-center justify-between gap-2 min-w-0">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <button
-                type="button"
-                onClick={startEditing}
-                className="w-7 h-7 rounded-lg bg-brand-indigo hover:opacity-90 text-white flex items-center justify-center font-bold text-xxs shrink-0 shadow-sm cursor-pointer"
-                title="Click to rename nickname"
-              >
-                <User className="w-3.5 h-3.5 text-white" />
+              <button onClick={startEditing} className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-indigo to-violet-600 hover:brightness-110 text-white flex items-center justify-center font-bold text-xxs shrink-0 shadow-lg border border-white/20 transition-all cursor-pointer">
+                <User className="w-4 h-4 text-white drop-shadow-sm" />
               </button>
               <div 
                 className="min-w-0 cursor-pointer flex-1 group" 
                 onClick={startEditing} 
-                title="Click to rename nickname"
               >
-                <span className="text-[9px] font-black uppercase text-brand-indigo block leading-none mb-0.5 flex items-center gap-1">
-                  Your Lobby Nickname <Edit2 className="w-2 h-2 text-brand-indigo/60 group-hover:text-brand-indigo transition-colors" />
+                <span className="text-[9px] font-black uppercase text-brand-indigo dark:text-brand-indigo-light block leading-none mb-1 flex items-center gap-1 opacity-80">
+                  Your Lobby Alias <Edit2 className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </span>
-                <div className="font-extrabold text-[11px] text-zinc-900 dark:text-zinc-100 truncate flex items-center gap-1 leading-none group-hover:text-brand-indigo transition-colors">
+                <div className="font-extrabold text-[12px] text-zinc-900 dark:text-white truncate flex items-center gap-1.5 leading-none">
                   {userIdentity}
-                  <span className="w-1 h-1 rounded-full bg-emerald-500" title="Online" />
                 </div>
               </div>
             </div>
 
             <button
-              id="btn-reroll-scholar-identity"
-              type="button"
               onClick={handleRerollIdentity}
-              className="p-1 hover:bg-brand-indigo/10 text-brand-indigo rounded-md transition-colors border-none bg-transparent cursor-pointer shrink-0"
+              className="p-1.5 hover:bg-white/50 dark:hover:bg-black/50 text-brand-indigo dark:text-brand-indigo-light rounded-md transition-all border border-brand-indigo/0 hover:border-brand-indigo/20 cursor-pointer shrink-0"
               title="Roll New Random Identity"
             >
-              <Shuffle className="w-3 h-3" />
+              <Shuffle className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
       </div>
 
       {/* Companions List */}
-      <div className="space-y-2">
-        <span className="text-[9px] font-black text-ios-secondary-text uppercase tracking-wider block font-sans">
-          Active Student Companions
+      <div className="space-y-2 relative z-10">
+        <span className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block font-sans">
+          Live Connection Network
         </span>
 
         <div className="space-y-2 max-h-[190px] overflow-y-auto pr-0.5 scroller-hidden">
@@ -331,45 +329,48 @@ export default function StudyLounge() {
             companions.map((c) => (
               <div
                 key={c.id}
-                className="p-2.5 bg-ios-light-bg dark:bg-zinc-950 rounded-xl border border-zinc-200/50 dark:border-zinc-900/60 flex items-start gap-2.5 relative transition-all duration-300 hover:border-brand-indigo/25 font-sans"
+                className="p-3 bg-white/40 dark:bg-black/20 backdrop-blur-md rounded-2xl border border-white/50 dark:border-white/10 flex items-start gap-3 relative transition-all duration-300 hover:bg-white/60 dark:hover:bg-black/40 hover:scale-[1.01] hover:shadow-md font-sans"
               >
                 {/* Avatar Initial with Status Dot */}
                 <div className="relative shrink-0">
-                  <div className="w-7.5 h-7.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center font-black text-[10px] font-mono select-none">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 text-zinc-700 dark:text-zinc-200 border border-white/60 dark:border-white/5 flex items-center justify-center font-black text-xs font-mono shadow-inner shadow-black/5 select-none">
                     {c.avatarChar}
                   </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border border-ios-light-bg dark:border-zinc-950 rounded-full" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#1a1c23] rounded-full shadow-sm" />
                 </div>
 
                 {/* Informational stack */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1.5">
-                    <h4 className="font-extrabold text-[11px] text-black dark:text-white truncate leading-none">
+                    <h4 className="font-bold text-[12px] text-black dark:text-white truncate leading-none drop-shadow-sm">
                       {c.name}
                     </h4>
-                    <div className="flex items-center gap-0.5 text-[8px] font-bold text-amber-500 bg-amber-500/10 px-1 py-0.5 rounded font-mono shrink-0">
-                      <Flame className="w-2 h-2 fill-amber-500" /> {c.streak}d
+                    <div className="flex items-center gap-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded-md font-mono shrink-0 backdrop-blur-[2px]">
+                      <Flame className="w-2.5 h-2.5 fill-amber-500/80" /> {c.streak}d
                     </div>
                   </div>
 
-                  <p className="text-[10px] text-zinc-650 dark:text-zinc-400 mt-0.5 truncate leading-tight font-medium">
+                  <p className="text-[10px] text-zinc-600 dark:text-zinc-300 mt-1 truncate leading-tight font-medium opacity-90">
                     {c.mode}
                   </p>
                   
-                  <div className="flex items-center justify-between gap-1 mt-1 border-t border-zinc-100 dark:border-zinc-900/40 pt-1 text-[8.5px] text-ios-secondary-text font-medium leading-none">
+                  <div className="flex items-center justify-between gap-1 mt-1.5 border-t border-black/5 dark:border-white/10 pt-1.5 text-[9px] text-zinc-500 dark:text-zinc-400 font-medium leading-none">
                     <span className="truncate">{c.subject}</span>
-                    <span className="shrink-0 font-mono text-zinc-400">Lv {c.level}</span>
+                    <span className="shrink-0 font-mono text-zinc-400 dark:text-zinc-500">Lv {c.level}</span>
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-900 text-center font-sans space-y-1">
-              <p className="text-[10.5px] font-bold text-zinc-800 dark:text-zinc-200 leading-snug">
-                You're the first scholar in the Lounge! ⚡
+            <div className="p-5 bg-white/30 dark:bg-black/20 backdrop-blur-sm rounded-2xl border border-dashed border-white/60 dark:border-white/10 text-center font-sans space-y-2">
+              <div className="w-8 h-8 rounded-full bg-brand-indigo/10 flex items-center justify-center mx-auto mb-2">
+                <Wifi className="w-4 h-4 text-brand-indigo animate-pulse" />
+              </div>
+              <p className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200 leading-snug">
+                You're the master node here! ⚡
               </p>
-              <p className="text-[9.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
-                Share this app URL with friends so they can join and study with you in real-time.
+              <p className="text-[10px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
+                Wait for peers to connect or share your study session. You are currently studying solo.
               </p>
             </div>
           )}
@@ -377,12 +378,12 @@ export default function StudyLounge() {
       </div>
 
       {/* Group dynamic stats */}
-      <div className="bg-brand-indigo/5 rounded-xl p-2.5 border border-brand-indigo/10 flex items-center justify-between text-[9px] font-sans">
-        <span className="text-brand-indigo font-bold flex items-center gap-1 shrink-0">
-          <GraduationCap className="w-3 h-3" /> Study Spark Active
+      <div className="relative z-10 bg-gradient-to-r from-brand-indigo/10 to-transparent dark:from-brand-indigo/20 rounded-xl p-2.5 border border-white/40 dark:border-brand-indigo/20 flex items-center justify-between text-[10px] font-sans backdrop-blur-md">
+        <span className="text-brand-indigo dark:text-brand-indigo-light font-bold flex items-center gap-1.5 shrink-0 drop-shadow-sm">
+          <GraduationCap className="w-3.5 h-3.5" /> Study Spark Active
         </span>
-        <span className="text-ios-secondary-text truncate ml-1.5">
-          Sync multipliers active!
+        <span className="text-zinc-600 dark:text-zinc-300 truncate ml-2 font-medium">
+          Live sync enabled!
         </span>
       </div>
     </div>
