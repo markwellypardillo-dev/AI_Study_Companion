@@ -333,10 +333,10 @@ export default function Dashboard({
         </div>
 
         {/* Daily Study Target */}
-        <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row md:flex-col lg:flex-row items-center gap-5 sm:gap-6 justify-between select-none">
-          <div className="flex items-center gap-4.5 min-w-0 flex-1">
+        <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-5 justify-between select-none">
+          <div className="flex items-center gap-4.5 min-w-0 flex-1 w-full">
             {/* SVG Progress Circle Dial */}
-            <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center shrink-0">
               <svg 
                 className="w-full h-full transform -rotate-90 overflow-visible" 
                 viewBox="0 0 80 80"
@@ -369,9 +369,9 @@ export default function Dashboard({
               </div>
             </div>
 
-            <div className="min-w-0">
-              <h3 className="font-extrabold text-[13px] sm:text-sm text-zinc-950 dark:text-white flex items-center gap-1.5">
-                Target Action Plan <Target className="w-4 h-4 text-brand-indigo" />
+            <div className="min-w-0 flex-1">
+              <h3 className="font-extrabold text-[13px] sm:text-sm text-zinc-950 dark:text-white flex items-center gap-1.5 break-words">
+                Target Action Plan <Target className="w-4 h-4 text-brand-indigo shrink-0" />
               </h3>
               <p className="text-[11px] sm:text-xs text-ios-secondary-text mt-1 max-w-md leading-normal font-sans">
                 Complete and log Pomodoro intervals to achieve your customizable Daily Target: <strong className="text-brand-indigo">{dailyFocusGoalRounds} rounds</strong> today!
@@ -380,9 +380,9 @@ export default function Dashboard({
           </div>
 
           {/* Stepper Controllers */}
-          <div className="flex items-center justify-between gap-5 bg-ios-light-bg dark:bg-ios-dark-bg px-4 py-2.5 rounded-2xl border border-zinc-200/50 dark:border-zinc-950 w-full sm:w-auto md:w-full lg:w-auto self-stretch sm:self-auto md:self-stretch lg:self-auto uppercase font-bold text-[10px]">
-            <span className="text-ios-secondary-text tracking-wide font-sans">Goal target:</span>
-            <div className="flex items-center gap-3 font-sans">
+          <div className="flex items-center justify-between gap-5 bg-ios-light-bg dark:bg-ios-dark-bg px-4 py-2.5 rounded-2xl border border-zinc-200/50 dark:border-zinc-950 w-full md:w-auto shrink-0 uppercase font-bold text-[10px]">
+            <span className="text-ios-secondary-text tracking-wide font-sans md:hidden">Goal target:</span>
+            <div className="flex items-center gap-3 font-sans w-full md:w-auto justify-end md:justify-center">
               <button
                 type="button"
                 id="btn-decrement-goal"
@@ -502,7 +502,7 @@ export default function Dashboard({
             </div>
 
             {/* Micro badges */}
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-2 flex-wrap max-w-full">
               <span className="text-[10px] px-2.5 py-1 bg-brand-indigo/10 text-brand-indigo font-black rounded-lg flex items-center gap-1 font-sans">
                 🔥 {stats.currentStreak} Day Streak
               </span>

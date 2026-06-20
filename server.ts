@@ -98,7 +98,63 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
   
   if (extension === "txt") {
     return buffer.toString("utf-8");
-  } else if (["pdf", "docx", "pptx", "xlsx"].includes(extension || "")) {
+  } else if (["jpg", "jpeg", "png", "webp"].includes(extension || "")) {
+    let mimeType = "image/jpeg";
+    if (extension === "png") mimeType = "image/png";
+    if (extension === "webp") mimeType = "image/webp";
+
+    const prompt = "Please transcribe all text from this image accurately. If there are diagrams, charts, or visual information, write a detailed description of them. Structure the transcription logically.";
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                data: rawBase64,
+                mimeType: mimeType
+              }
+            }
+          ]
+        }
+      ]
+    });
+    
+    if (response && response.text) {
+      return response.text;
+    } else {
+      throw new Error("Could not extract text from image.");
+    }
+  } else if (extension === "pdf") {
+    const prompt = "Please transcribe all text from this document accurately. Treat any diagrams, charts, or embedded photos as visual information and write a detailed description of them inline. Structure the transcription logically to retain flow.";
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                data: rawBase64,
+                mimeType: "application/pdf"
+              }
+            }
+          ]
+        }
+      ]
+    });
+    
+    if (response && response.text) {
+      return response.text;
+    } else {
+      throw new Error("Could not extract text from PDF using vision models.");
+    }
+  } else if (["docx", "pptx", "xlsx"].includes(extension || "")) {
     const ast = await OfficeParser.parseOffice(buffer);
     return ast.toText();
   }

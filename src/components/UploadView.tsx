@@ -1,4 +1,4 @@
-import { useState, useRef, DragEvent, ChangeEvent } from "react";
+import { useState, useRef, DragEvent, ChangeEvent, useEffect } from "react";
 import { UploadCloud, FileText, CheckCircle2, AlertTriangle, Play, Sparkles, ChevronDown } from "lucide-react";
 import { OfficeParser } from "officeparser";
 import { PRELOADED_SUBJECTS } from "../data/preloadedSubjects";
@@ -15,7 +15,21 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
   const [fileName, setFileName] = useState<string>("");
   const [fileContent, setFileContent] = useState<string>("");
   const [showAllSamples, setShowAllSamples] = useState<boolean>(false);
+  const [longLoading, setLongLoading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isCancelledRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (progressState > -1 && progressState < 4) {
+      timeout = setTimeout(() => {
+        setLongLoading(true);
+      }, 10000);
+    } else {
+      setLongLoading(false);
+    }
+    return () => clearTimeout(timeout);
+  }, [progressState]);
 
   const steps = [
     "Uploading document...",
@@ -34,7 +48,14 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
     }
   };
 
+  const handleCancel = () => {
+    isCancelledRef.current = true;
+    setProgressState(-1);
+    setLongLoading(false);
+  };
+
   const executeParsingSimulation = (name: string, content: string) => {
+    isCancelledRef.current = false;
     setFileName(name);
     setFileContent(content);
     setProgressState(0);
@@ -43,6 +64,10 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
     // Simulate realistic parsing steps
     let currentStep = 0;
     const interval = setInterval(() => {
+      if (isCancelledRef.current) {
+        clearInterval(interval);
+        return;
+      }
       currentStep++;
       if (currentStep < steps.length) {
         setProgressState(currentStep);
@@ -52,7 +77,7 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
         setProgressState(steps.length);
         setParsingStep("Extraction completed successfully!");
         setTimeout(() => {
-          onFileLoaded(name, content);
+          if (!isCancelledRef.current) onFileLoaded(name, content);
         }, 800);
       }
     }, 700);
@@ -78,13 +103,14 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
 
   const handleFile = (file: File) => {
     const extension = file.name.split(".").pop()?.toLowerCase();
-    const allowed = ["pdf", "docx", "pptx", "txt", "xlsx"];
+    const allowed = ["pdf", "docx", "pptx", "txt", "xlsx", "png", "jpg", "jpeg", "webp"];
 
     if (!extension || !allowed.includes(extension)) {
-      alert("Invalid format! Accepted document formats are: .pdf, .docx, .pptx, .txt, .xlsx");
+      alert("Invalid format! Accepted document formats are: .pdf, .docx, .pptx, .txt, .xlsx, .png, .jpg, .jpeg, .webp");
       return;
     }
 
+    isCancelledRef.current = false;
     setFileName(file.name);
     setProgressState(0);
     setParsingStep(steps[0]); // "Reading file stream buffers..."
@@ -108,6 +134,8 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
           if (extension === "txt") {
             const decoder = new TextDecoder("utf-8");
             extractedText = decoder.decode(uint8Array);
+          } else if (["png", "jpg", "jpeg", "webp", "pdf"].includes(extension || "")) {
+            throw new Error("Image/PDF parsing requires server-side Gemini processing to read photos.");
           } else {
             const ast = await OfficeParser.parseOffice(uint8Array, {
               pdfWorkerSrc: "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.worker.min.mjs"
@@ -151,26 +179,31 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
           parsedSuccessfully = true;
         }
 
+        if (isCancelledRef.current) return;
         // Step 2: Parsing metadata attributes & paragraphs
         setProgressState(2);
         setParsingStep(steps[2]);
 
         setTimeout(() => {
+          if (isCancelledRef.current) return;
           // Step 3: Grounding context indices
           setProgressState(3);
           setParsingStep(steps[3]);
           
           setTimeout(() => {
+            if (isCancelledRef.current) return;
             // Step 4: Assembling LLM study prompt payload
             setProgressState(4);
             setParsingStep(steps[4]);
 
             setTimeout(() => {
+              if (isCancelledRef.current) return;
               // Final Step: Complete!
               setProgressState(5);
               setParsingStep("Extraction completed successfully!");
               
               setTimeout(() => {
+                if (isCancelledRef.current) return;
                 onFileLoaded(file.name, extractedText);
               }, 600);
             }, 500);
@@ -232,7 +265,7 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
               ref={fileInputRef}
               type="file"
               onChange={handleFileInput}
-              accept=".pdf,.docx,.pptx,.txt,.xlsx"
+              accept=".pdf,.docx,.pptx,.txt,.xlsx,.png,.jpg,.jpeg,.webp"
               className="hidden"
             />
             <div className="p-4 bg-brand-indigo/10 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
@@ -242,7 +275,7 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
               Drag & Drop your materials
             </h3>
             <p className="text-xs text-ios-secondary-text mt-1">
-              Supports PDF, DOCX, PPTX, TXT, XLSX (Up to 25MB)
+              Supports PDF, DOCX, PPTX, TXT, XLSX, PNG, JPG, WEBP (Up to 25MB)
             </p>
             <button
               id="btn-trigger-file-select"
@@ -361,6 +394,26 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
               </div>
             ))}
           </div>
+
+          {(longLoading || progressState > -1) && (
+            <div className="mt-8 flex flex-col items-center gap-4 text-center">
+              {longLoading && (
+                <div className="flex animate-fade-in items-start gap-2 max-w-sm bg-orange-500/10 text-orange-600 dark:text-orange-400 p-3 rounded-xl text-xs text-left">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <p>
+                    <strong>This is taking a bit longer than usual!</strong> We might be processing a large document. You can keep waiting, or cancel and try again.
+                  </p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-6 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-ios-light dark:bg-ios-dark text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all text-xs font-bold"
+              >
+                Cancel / Go Back
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

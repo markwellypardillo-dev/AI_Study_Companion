@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "./lib/supabase";
+import { LoginView } from "./components/LoginView";
 
 const logoUrl = "https://i.postimg.cc/ht4X0Tbj/LOGO-for-Ai-companion.png";
 import {
@@ -198,6 +200,9 @@ export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [progress, setProgress] = useState<UserProgress>(INITIAL_PROGRESS);
   const [activeMode, setActiveMode] = useState<AppMode>("upload");
+
+  const [user, setUser] = useState<any>(null);
+  const [isGuestMode, setIsGuestMode] = useState<boolean>(false);
 
   // Document extraction variables
   const [fileName, setFileName] = useState<string>("");
@@ -1073,6 +1078,19 @@ export default function App() {
     handleResetDocument();
   };
 
+  const handleLogout = async () => {
+    if (supabase && supabase.auth) {
+      await supabase.auth.signOut();
+    }
+    setUser(null);
+    setIsGuestMode(false);
+    setActiveMode("upload");
+  };
+
+  if (!user && !isGuestMode) {
+    return <LoginView onLogin={setUser} onEnterGuest={() => setIsGuestMode(true)} />;
+  }
+
   return (
     <div className="min-h-screen bg-ios-light-bg dark:bg-ios-dark-bg font-sans text-black dark:text-white selection:bg-brand-indigo/20 transition-colors duration-300">
       
@@ -1133,6 +1151,16 @@ export default function App() {
             ) : (
               <Sun className="w-4 h-4 text-amber-400" />
             )}
+          </button>
+
+          {/* Logout App Button */}
+          <button
+            id="btn-app-logout"
+            onClick={handleLogout}
+            className="p-2 sm:p-2.5 rounded-xl bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:text-red-500 dark:hover:border-red-900/50 transition-colors duration-200"
+            title="Sign out / Exit Guest Mode"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
@@ -1207,6 +1235,20 @@ export default function App() {
                 <div className="mt-8 flex flex-col items-center gap-1 text-xs text-brand-indigo font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo animate-bounce" />
                   Processing document structure...
+                </div>
+
+                <div className="mt-8">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGeneratingGuide(false);
+                      setIsQuotaQueue(false);
+                      setGenerationError("Document processing canceled by user.");
+                    }}
+                    className="px-6 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-ios-light dark:bg-ios-dark text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all text-xs font-bold"
+                  >
+                    Cancel / Go Back
+                  </button>
                 </div>
               </>
             )}
