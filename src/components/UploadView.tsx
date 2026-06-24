@@ -1,7 +1,8 @@
 import { useState, useRef, DragEvent, ChangeEvent, useEffect } from "react";
-import { UploadCloud, FileText, CheckCircle2, AlertTriangle, Play, Sparkles, ChevronDown } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle2, AlertTriangle, Play, Sparkles, ChevronDown, HardDrive } from "lucide-react";
 import { OfficeParser } from "officeparser";
 import { PRELOADED_SUBJECTS } from "../data/preloadedSubjects";
+import GoogleDrivePicker from "./GoogleDrivePicker";
 
 interface UploadViewProps {
   onFileLoaded: (fileName: string, fileContent: string) => void;
@@ -16,6 +17,7 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
   const [fileContent, setFileContent] = useState<string>("");
   const [showAllSamples, setShowAllSamples] = useState<boolean>(false);
   const [longLoading, setLongLoading] = useState<boolean>(false);
+  const [showDrivePicker, setShowDrivePicker] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isCancelledRef = useRef<boolean>(false);
 
@@ -277,14 +279,37 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
             <p className="text-xs text-ios-secondary-text mt-1">
               Supports PDF, DOCX, PPTX, TXT, XLSX, PNG, JPG, WEBP (Up to 25MB)
             </p>
-            <button
-              id="btn-trigger-file-select"
-              className="mt-6 px-5 py-2.5 bg-brand-indigo text-white text-xs font-bold rounded-xl shadow-[0_4px_12px_rgba(90,75,255,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Browse files
-            </button>
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                id="btn-trigger-file-select"
+                className="px-5 py-2.5 bg-brand-indigo text-white text-xs font-bold rounded-xl shadow-[0_4px_12px_rgba(90,75,255,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Browse files
+              </button>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // prevent triggering drag-drop zone file select
+                  setShowDrivePicker(true);
+                }}
+                className="px-5 py-2.5 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 text-xs font-bold rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+              >
+                <HardDrive className="w-3.5 h-3.5" />
+                Google Drive
+              </button>
+            </div>
           </div>
+
+          {showDrivePicker && (
+            <GoogleDrivePicker 
+              onClose={() => setShowDrivePicker(false)}
+              onFileSelected={(fileObj) => {
+                setShowDrivePicker(false);
+                handleFile(fileObj);
+              }}
+            />
+          )}
 
           {/* Quick Preload Examples */}
           <div className="mt-10">

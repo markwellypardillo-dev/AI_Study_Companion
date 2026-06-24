@@ -106,7 +106,7 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
     const prompt = "Please transcribe all text from this image accurately. If there are diagrams, charts, or visual information, write a detailed description of them. Structure the transcription logically.";
     
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-3.1-pro-preview",
       contents: [
         {
           role: "user",
@@ -129,10 +129,10 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
       throw new Error("Could not extract text from image.");
     }
   } else if (extension === "pdf") {
-    const prompt = "Please transcribe all text from this document accurately. Treat any diagrams, charts, or embedded photos as visual information and write a detailed description of them inline. Structure the transcription logically to retain flow.";
+    const prompt = "You are analyzing a PDF document. Some PDFs contain only images (like scanned slides or photos). DO NOT just read the metadata or alt-text (e.g. 'image10.jpg'). You MUST visually inspect the actual pages and images within the PDF. Transcribe any text you see inside the images, and describe any charts, diagrams, or visual content in high detail.";
     
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-3.1-pro-preview",
       contents: [
         {
           role: "user",
