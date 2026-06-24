@@ -74,6 +74,7 @@ interface DashboardProps {
 }
 
 const getLocalISOString = (d: Date) => {
+  // Use local parts to build YYYY-MM-DD
   const pad = (n: number) => n.toString().padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
@@ -142,6 +143,7 @@ export default function Dashboard({
     const updated = [newEntry, ...journalEntries];
     setJournalEntries(updated);
     localStorage.setItem("ai_study_companion_journal_entries", JSON.stringify(updated));
+    window.dispatchEvent(new Event("local-activity-updated"));
     setNewJournalNote("");
   };
 
@@ -149,6 +151,7 @@ export default function Dashboard({
     const updated = journalEntries.filter((item) => item.id !== id);
     setJournalEntries(updated);
     localStorage.setItem("ai_study_companion_journal_entries", JSON.stringify(updated));
+    window.dispatchEvent(new Event("local-activity-updated"));
   };
 
   // Calendar Heatmap Simulator local state
@@ -170,6 +173,7 @@ export default function Dashboard({
     }
     setSimulatedDates(updated);
     localStorage.setItem("ai_study_companion_simulated_dates", JSON.stringify(updated));
+    window.dispatchEvent(new Event("local-activity-updated"));
   };
 
   // Generate exactly 24 weeks of dates (ending on current week's Saturday, starting on Sunday 23 weeks ago)
@@ -243,30 +247,6 @@ export default function Dashboard({
 
   // Compute dynamic daily statistical indicators
   const stats = React.useMemo(() => {
-    // Compute continuous focus streak backward from today
-    let streak = 0;
-    const tempDate = new Date();
-    
-    for (let i = 0; i < 365; i++) {
-      const checkStr = getLocalISOString(tempDate);
-      if ((studyActivityScores.counts[checkStr] || 0) > 0) {
-        streak++;
-        tempDate.setDate(tempDate.getDate() - 1);
-      } else {
-        // If first check (today), allow streak to continue if yesterday was active
-        if (i === 0) {
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yStr = getLocalISOString(yesterday);
-          if ((studyActivityScores.counts[yStr] || 0) > 0) {
-            tempDate.setDate(tempDate.getDate() - 1);
-            continue;
-          }
-        }
-        break;
-      }
-    }
-
     // Active days in this 24-week grid
     let activeInGrid = 0;
     gridDates.forEach((d) => {
@@ -279,11 +259,11 @@ export default function Dashboard({
     const activeRatio = ((activeInGrid / 168) * 100).toFixed(0);
 
     return {
-      currentStreak: streak,
+      currentStreak: progress.dailyStreak,
       activeDaysCount: activeInGrid,
       consistencyRatio: activeRatio
     };
-  }, [studyActivityScores, gridDates]);
+  }, [studyActivityScores, gridDates, progress.dailyStreak]);
 
   // Calculate average score safely
   const averageScore = progress.quizHistory.length > 0

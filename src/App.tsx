@@ -75,6 +75,7 @@ const LOCAL_STORAGE_PROGRESS_KEY = "ai_study_companion_progress";
 import { initGlobalPresence, forceUpdatePresence, subscribeToMessages, getClientUid } from "./lib/socketPresence";
 
 const getLocalISOString = (d: Date) => {
+  // Use local parts to build YYYY-MM-DD
   const pad = (n: number) => n.toString().padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
@@ -321,6 +322,14 @@ export default function App() {
     return saved ? parseInt(saved, 10) : 4;
   });
 
+  const [localActivityTrigger, setLocalActivityTrigger] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = () => setLocalActivityTrigger(prev => prev + 1);
+    window.addEventListener("local-activity-updated", handleUpdate);
+    return () => window.removeEventListener("local-activity-updated", handleUpdate);
+  }, []);
+
   // Automatically calculate and synchronize the streak across sessions
   useEffect(() => {
     const counts: Record<string, number> = {};
@@ -372,7 +381,7 @@ export default function App() {
         return next;
       });
     }
-  }, [progress.quizHistory, progress.totalFocusSeconds]);
+  }, [progress.quizHistory, progress.totalFocusSeconds, localActivityTrigger]);
 
   // Web Audio Context & Oscillator Node refs
   const audioContextRef = useRef<AudioContext | null>(null);
