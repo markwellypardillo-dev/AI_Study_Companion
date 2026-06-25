@@ -35,8 +35,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) =
       if (isLogin) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         onLogin(userCredential.user);
-      } else if (err.code === 'auth/unauthorized-domain') {
-        setError("This domain is not authorized for Google Sign-In. Please add it to your Firebase Console under Authentication -> Settings -> Authorized domains.");
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         onLogin(userCredential.user);
@@ -69,7 +67,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) =
         onLogin(result.user);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google.');
+      if (err.code === 'auth/unauthorized-domain') {
+        setError("This domain is not authorized for OAuth. You need to add this app's URL to the 'Authorized domains' list in your Firebase Console (Authentication > Settings > Authorized domains).");
+      } else {
+        setError(err.message || 'Failed to sign in with Google.');
+      }
     } finally {
       setLoading(false);
     }

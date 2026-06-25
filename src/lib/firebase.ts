@@ -56,8 +56,14 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path,
   };
+  
+  // If the user just signed out, it's normal to get permission denied on active listeners
+  if (!auth.currentUser && errInfo.error.includes("Missing or insufficient permissions")) {
+    console.log("Ignored expected firestore permission error during sign-out:", errInfo.path);
+    return;
+  }
+  
   console.error("Firestore Error: ", JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
 }
 
 // Test connection on boot

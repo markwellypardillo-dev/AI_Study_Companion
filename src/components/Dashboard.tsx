@@ -118,12 +118,27 @@ export default function Dashboard({
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
 
   React.useEffect(() => {
-    // Only load if not guest or something. App.tsx already syncs Firebase.
-    import("../lib/db").then(({ syncJournalEntries }) => {
-      const unsub = syncJournalEntries(setJournalEntries);
-      return unsub;
-    });
-  }, []);
+    let unsubscribe: (() => void) | undefined;
+    let isMounted = true;
+
+    if (user) {
+      import("../lib/db").then(({ syncJournalEntries }) => {
+        if (!isMounted) {
+          const unsub = syncJournalEntries(setJournalEntries);
+          unsub();
+        } else {
+          unsubscribe = syncJournalEntries(setJournalEntries);
+        }
+      });
+    }
+
+    return () => {
+      isMounted = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user]);
 
   const [newJournalNote, setNewJournalNote] = useState<string>("");
   const [newJournalMood, setNewJournalMood] = useState<"focused" | "neutral" | "tired">("focused");
