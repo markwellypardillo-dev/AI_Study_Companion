@@ -26,7 +26,7 @@ async function generateContentWithRetryAndFallback(params: {
   contents: string;
   config?: any;
 }): Promise<any> {
-  const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+  const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite", "gemini-3.1-pro-preview"];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
