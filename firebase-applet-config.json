@@ -1,10 +1,10 @@
 {
-  "projectId": "spherical-plane-w8gvj",
-  "appId": "1:282501667476:web:2870bcc27aecf970067281",
-  "apiKey": "AIzaSyDdUtLDhNqXwyXXDREri23qHluE_MSBlFk",
-  "authDomain": "spherical-plane-w8gvj.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-649dfb40-5f02-4a46-9090-8af138b236cb",
-  "storageBucket": "spherical-plane-w8gvj.firebasestorage.app",
-  "messagingSenderId": "282501667476",
-  "measurementId": ""
+  "projectId": "ai-study-companion-9d232",
+  "appId": "1:840535774861:web:ce7c548913af03d219b4c4",
+  "apiKey": "AIzaSyD3zyQDSJZbt2ljCDwdZNktRip4OruXXNU",
+  "authDomain": "ai-study-companion-9d232.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "ai-study-companion-9d232.firebasestorage.app",
+  "messagingSenderId": "840535774861",
+  "measurementId": "G-WG40LHCLJB"
 }

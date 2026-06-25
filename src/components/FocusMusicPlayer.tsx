@@ -60,6 +60,7 @@ export default function FocusMusicPlayer({
   const [activePlayer, setActivePlayer] = useState<"internal" | "spotify">(() => (localStorage.getItem("ai_study_player_type") as "internal" | "spotify") || "internal");
   const [spotifyInput, setSpotifyInput] = useState("");
   const [spotifyEmbedUrl, setSpotifyEmbedUrl] = useState(() => localStorage.getItem("ai_study_spotify_embed") || "");
+  const [showSpotifyHelp, setShowSpotifyHelp] = useState<boolean>(false);
 
   const switchPlayer = (mode: "internal" | "spotify") => {
     setActivePlayer(mode);
@@ -233,8 +234,19 @@ export default function FocusMusicPlayer({
                   className="block"
                 ></iframe>
               </div>
-              <div className="text-[10px] text-ios-secondary-text leading-tight bg-blue-500/10 text-blue-500 dark:text-blue-400 p-2 rounded-lg">
-                <strong>Seeing a "Preview" badge?</strong> Spotify only plays full tracks if you're logged in. Because this app is in a preview window, your browser might be blocking Spotify's login cookie. To hear the full songs, click the "Open in new tab" icon (top right of the AI Studio window), and ensure you are logged into Spotify in your browser.
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => setShowSpotifyHelp(!showSpotifyHelp)}
+                  className="text-[10px] w-fit sm:text-[11px] font-semibold text-blue-500/80 hover:text-blue-500 flex items-center gap-1 transition-colors bg-blue-500/5 px-2 py-1 rounded-full"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  Spotify Preview Issues?
+                </button>
+                {showSpotifyHelp && (
+                  <div className="text-[10px] text-ios-secondary-text leading-tight bg-blue-500/10 text-blue-500 dark:text-blue-400 p-2 rounded-lg animate-in fade-in slide-in-from-top-1 duration-200">
+                    <strong>Seeing a "Preview" badge?</strong> Spotify only plays full tracks if you're logged in. Because this app is in a preview window, your browser might be blocking Spotify's login cookie. To hear the full songs, click the "Open in new tab" icon (top right of the AI Studio window), and ensure you are logged into Spotify in your browser.
+                  </div>
+                )}
               </div>
               <button 
                 onClick={() => {

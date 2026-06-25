@@ -1,8 +1,33 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MessageSquare, X, Send, User, Reply } from "lucide-react";
+import { MessageSquare, X, Send, User, Reply, CornerUpLeft } from "lucide-react";
 import { CompanionStudent, subscribeToMessages, sendDirectMessage, DirectMessage, getClientUid, sendTypingStatus, subscribeToTyping, sessionMessageHistory, getUserIdentity } from "../lib/socketPresence";
 import { db, handleFirestoreError, OperationType } from "../lib/firebase";
-import { collection, addDoc, query, where, getDocs, or, orderBy, limit } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, or, orderBy, limit, onSnapshot } from "firebase/firestore";
+
+const getOriginalMessageText = (message: string) => {
+  if (message.startsWith("↳ Replying to ")) {
+    const parts = message.split("\n\n");
+    if (parts.length > 1) {
+      return parts.slice(1).join("\n\n");
+    }
+  }
+  return message;
+};
+
+const parseMessage = (text: string) => {
+  if (text.startsWith("↳ Replying to ")) {
+    const parts = text.split("\n\n");
+    if (parts.length > 1) {
+      const header = parts[0]; 
+      const lines = header.split("\n");
+      const replyingToName = lines[0].replace("↳ Replying to ", "").replace(":", "");
+      const snippet = lines.slice(1).join("\n").replace(/^"|"$/g, '');
+      const actualMessage = parts.slice(1).join("\n\n");
+      return { isReply: true, replyingToName, snippet, actualMessage };
+    }
+  }
+  return { isReply: false, actualMessage: text };
+};
 
 interface StudentMessengerProps {
   companion: CompanionStudent;
@@ -20,24 +45,24 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const loadMessages = async () => {
-      // Start with local session history
-      let localMsgs = sessionMessageHistory.filter(msg => msg.fromId === companion.id || msg.toId === companion.id).sort((a, b) => a.timestamp - b.timestamp);
-      setMessages(localMsgs);
+    let unsubscribe = () => {};
 
-      try {
-        const myId = getClientUid();
-        const q = query(
-          collection(db, "direct_messages"),
-          or(
-            where("conversationId", "==", `${myId}_${companion.id}`),
-            where("conversationId", "==", `${companion.id}_${myId}`)
-          ),
-          orderBy("timestamp", "asc"),
-          limit(150)
-        );
-        const snapshot = await getDocs(q);
-        
+    const loadMessages = () => {
+      const myId = getClientUid();
+      // Create a consistent conversation ID by sorting the two IDs
+      const conversationId = [myId, companion.id].sort().join('_');
+
+      const q = query(
+        collection(db, "direct_messages"),
+        where("conversationId", "==", conversationId)
+      );
+
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        // Start with local session history that might not be saved yet
+        const localMsgs = sessionMessageHistory
+          .filter(msg => msg.fromId === companion.id || msg.toId === companion.id)
+          .sort((a, b) => a.timestamp - b.timestamp);
+          
         if (!snapshot.empty) {
           const loadedMessages: DirectMessage[] = snapshot.docs.map(doc => ({
             id: doc.id,
@@ -55,11 +80,14 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
             }
           });
           setMessages(merged.sort((a, b) => a.timestamp - b.timestamp));
+        } else {
+          setMessages(localMsgs);
         }
-      } catch (error) {
-        // Ignoring error for now if the collection doesn't exist or no permission
-      }
+      }, (err) => {
+        console.error("Error loading messages:", err);
+      });
     };
+
     loadMessages();
 
     const unsubMessages = subscribeToMessages((msg) => {
@@ -80,6 +108,7 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
     });
 
     return () => {
+      unsubscribe();
       unsubMessages();
       unsubTyping();
     };
@@ -116,7 +145,9 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
     
     let finalMessageText = inputValue.trim();
     if (replyingTo) {
-      const snippet = replyingTo.message.length > 50 ? replyingTo.message.substring(0, 50) + "..." : replyingTo.message;
+      let originalText = getOriginalMessageText(replyingTo.message);
+      let snippet = originalText.length > 50 ? originalText.substring(0, 50) + "..." : originalText;
+      snippet = snippet.replace(/\n/g, " ");
       finalMessageText = `↳ Replying to ${replyingTo.fromName}:\n"${snippet}"\n\n${finalMessageText}`;
     }
 
@@ -130,13 +161,15 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
     };
     
     setMessages(prev => [...prev, newMsg]);
-    sendDirectMessage(companion.id, finalMessageText);
+    sendDirectMessage(companion.id, finalMessageText, newMsg.timestamp, newMsg.id);
     setInputValue("");
     setReplyingTo(null);
 
+    const conversationId = [myId, companion.id].sort().join('_');
+
     try {
       addDoc(collection(db, "direct_messages"), {
-        conversationId: `${myId}_${companion.id}`,
+        conversationId,
         fromId: myId,
         toId: companion.id,
         fromName: myName || "You",
@@ -185,21 +218,46 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
         ) : (
           messages.map((msg, i) => {
             const isMe = msg.fromId === getClientUid();
+            const { isReply, replyingToName, snippet, actualMessage } = parseMessage(msg.message);
+
             return (
               <div key={msg.id || i} className={`group flex flex-col max-w-[85%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"}`}>
-                <div className={`flex items-center gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-                  <div 
-                    className={`px-3 py-2 rounded-2xl text-xs shadow-sm backdrop-blur-md border whitespace-pre-wrap ${
-                      isMe 
-                        ? "bg-brand-indigo/90 text-white border-brand-indigo/50 rounded-br-sm" 
-                        : "bg-white/80 dark:bg-zinc-800/80 text-black dark:text-white border-white/50 dark:border-white/10 rounded-bl-sm"
-                    }`}
-                  >
-                    {msg.message}
+                
+                {isReply && (
+                  <div className={`flex items-center gap-1.5 text-[10px] text-zinc-500 font-semibold mb-0.5 px-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                    <CornerUpLeft className={`w-3 h-3 ${isMe ? "" : "-scale-x-100"}`} />
+                    <span>{isMe ? `You replied to ${replyingToName}` : `${msg.fromName} replied to you`}</span>
                   </div>
+                )}
+                
+                <div className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                  <div className={`flex flex-col max-w-full ${isMe ? "items-end" : "items-start"}`}>
+                    {isReply && (
+                      <div 
+                        className={`px-3 py-1.5 rounded-2xl text-[11px] opacity-75 backdrop-blur-md border whitespace-pre-wrap translate-y-1.5 pb-2.5 z-0 relative ${
+                          isMe 
+                            ? "bg-brand-indigo/60 text-white border-brand-indigo/30 rounded-b-sm" 
+                            : "bg-black/10 dark:bg-white/10 text-black dark:text-white border-transparent rounded-b-sm"
+                        }`}
+                      >
+                        {snippet}
+                      </div>
+                    )}
+                    
+                    <div 
+                      className={`px-3 py-2 rounded-2xl text-xs shadow-sm backdrop-blur-md border whitespace-pre-wrap z-10 relative ${
+                        isMe 
+                          ? `bg-brand-indigo/90 text-white border-brand-indigo/50 ${isReply ? "rounded-tr-sm" : ""} rounded-br-sm` 
+                          : `bg-white/80 dark:bg-zinc-800/80 text-black dark:text-white border-white/50 dark:border-white/10 ${isReply ? "rounded-tl-sm" : ""} rounded-bl-sm`
+                      }`}
+                    >
+                      {actualMessage}
+                    </div>
+                  </div>
+                  
                   <button 
                     onClick={() => setReplyingTo(msg)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 shrink-0 shadow-sm border border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 bg-white/50 dark:bg-zinc-800/50"
+                    className="opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 shrink-0 shadow-sm border border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 bg-white/50 dark:bg-zinc-800/50 mb-2"
                     title="Reply"
                   >
                     <Reply className="w-3 h-3" />
@@ -233,7 +291,7 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
                  <Reply className="w-3 h-3.5" /> Replying to {replyingTo.fromName}
                </span>
                <span className="text-[11px] text-zinc-600 dark:text-zinc-400 truncate w-full pl-4 border-l-[3px] border-brand-indigo/30">
-                 {replyingTo.message}
+                 {getOriginalMessageText(replyingTo.message)}
                </span>
             </div>
             <button 

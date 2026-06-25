@@ -479,6 +479,13 @@ async function startServer() {
       const { id, name, subject, mode, streak, level, avatarChar } = data;
       if (!id) return;
       
+      // Clean up any old presence entries for this socket but with a different ID
+      for (const [key, val] of activePresenceMap.entries()) {
+        if (val.socketId === socket.id && key !== id) {
+          activePresenceMap.delete(key);
+        }
+      }
+
       activePresenceMap.set(id, {
         id,
         name: name || "Scholar",
@@ -500,6 +507,13 @@ async function startServer() {
       const { id, name, subject, mode, streak, level, avatarChar } = data;
       if (!id) return;
       
+      // Clean up any old presence entries for this socket but with a different ID
+      for (const [key, val] of activePresenceMap.entries()) {
+        if (val.socketId === socket.id && key !== id) {
+          activePresenceMap.delete(key);
+        }
+      }
+
       const existing = activePresenceMap.get(id);
       if (existing) {
         existing.name = name || existing.name;
@@ -527,18 +541,18 @@ async function startServer() {
     });
 
     socket.on("send-direct-message", (data) => {
-      const { toId, fromId, fromName, message } = data;
+      const { toId, fromId, fromName, message, id, timestamp } = data;
       if (!toId || !fromId || !message) return;
 
       const recipient = activePresenceMap.get(toId);
       if (recipient && recipient.socketId) {
         io.to(recipient.socketId).emit("direct-message", {
-          id: Math.random().toString(36).substring(2, 9),
+          id: id || Math.random().toString(36).substring(2, 9),
           fromId,
           toId,
           fromName,
           message,
-          timestamp: Date.now()
+          timestamp: timestamp || Date.now()
         });
       }
     });
@@ -557,16 +571,15 @@ async function startServer() {
     });
 
     socket.on("disconnect", () => {
-      let disconnectedId = null;
+      let changed = false;
       for (const [key, val] of activePresenceMap.entries()) {
         if (val.socketId === socket.id) {
-          disconnectedId = key;
           activePresenceMap.delete(key);
-          break;
+          changed = true;
         }
       }
       
-      if (disconnectedId) {
+      if (changed) {
         io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
       }
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);

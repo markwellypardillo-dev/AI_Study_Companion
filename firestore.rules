@@ -64,9 +64,7 @@ service cloud.firestore {
     }
 
     match /direct_messages/{messageId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && incoming().fromId == request.auth.uid;
-      allow update, delete: if false;
+      allow read, write: if true;
     }
   }
 }

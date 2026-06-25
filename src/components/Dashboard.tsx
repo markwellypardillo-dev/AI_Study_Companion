@@ -17,7 +17,8 @@ import {
   Plus,
   Minus,
   Smile,
-  Book
+  Book,
+  Info
 } from "lucide-react";
 import { UserProgress, Track } from "../types";
 import PomodoroTimer from "./PomodoroTimer";
@@ -113,6 +114,9 @@ export default function Dashboard({
   onAddXp
 }: DashboardProps) {
   const [showDebug, setShowDebug] = useState<boolean>(false);
+  const [showGridHelp, setShowGridHelp] = useState<boolean>(false);
+  const [showJournalHelp, setShowJournalHelp] = useState<boolean>(false);
+  const [showQuizHelp, setShowQuizHelp] = useState<boolean>(false);
   
   // Study journal local state
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
@@ -528,10 +532,21 @@ export default function Dashboard({
             </div>
           </div>
 
-          <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-normal font-medium">
-            Every logged Pomodoro round, completed quiz, or reflection journal entry builds your daily learning streak! 
-            <strong className="text-brand-indigo ml-1 font-semibold">💡 Click any grid square</strong> to toggle a &quot;Simulated Completed Study Session&quot; for that day and watch your analytics grow!
-          </p>
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={() => setShowGridHelp(!showGridHelp)}
+              className="text-[10px] w-fit sm:text-[11px] font-semibold text-brand-indigo/80 hover:text-brand-indigo flex items-center gap-1 transition-colors bg-brand-indigo/5 px-2 py-1 rounded-full"
+            >
+              <Info className="w-3.5 h-3.5" />
+              How this works
+            </button>
+            {showGridHelp && (
+              <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-normal font-medium animate-in fade-in slide-in-from-top-1 duration-200 bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                Every logged Pomodoro round, completed quiz, or reflection journal entry builds your daily learning streak! 
+                <strong className="text-brand-indigo ml-1 font-semibold">💡 Click any grid square</strong> to toggle a &quot;Simulated Completed Study Session&quot; for that day and watch your analytics grow!
+              </p>
+            )}
+          </div>
 
           <div className="border border-zinc-200/50 dark:border-zinc-900/60 p-4.5 rounded-2xl bg-ios-light-bg dark:bg-ios-dark-bg space-y-3">
             {/* Layout combining Weekdays left + Scrolling Grid (with Month headers built-in) right */}
@@ -695,9 +710,20 @@ export default function Dashboard({
             <h3 className="font-extrabold text-[13px] sm:text-sm text-zinc-950 dark:text-white leading-tight">Active Session Reflection Journal</h3>
           </div>
 
-          <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-relaxed font-sans">
-            Solidify what you studied! Active cognitive retrieval—like reflecting on your completed Pomodoro intervals—multiplies conceptual memory recall.
-          </p>
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={(e) => { e.preventDefault(); setShowJournalHelp(!showJournalHelp); }}
+              className="text-[10px] w-fit sm:text-[11px] font-semibold text-brand-indigo/80 hover:text-brand-indigo flex items-center gap-1 transition-colors bg-brand-indigo/5 px-2 py-1 rounded-full"
+            >
+              <Info className="w-3.5 h-3.5" />
+              Why keep a journal?
+            </button>
+            {showJournalHelp && (
+              <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-relaxed font-sans animate-in fade-in slide-in-from-top-1 duration-200 bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                Solidify what you studied! Active cognitive retrieval—like reflecting on your completed Pomodoro intervals—multiplies conceptual memory recall.
+              </p>
+            )}
+          </div>
 
           <form onSubmit={handleAddJournalEntry} className="space-y-4 bg-ios-light-bg dark:bg-ios-dark-bg p-4 sm:p-5 rounded-2xl border border-zinc-200/50 dark:border-zinc-950">
             <div className="space-y-1.5">
@@ -930,14 +956,25 @@ export default function Dashboard({
         />
 
         {/* Quick motivational cards */}
-        <div className="bg-brand-indigo/10 border border-brand-indigo/20 rounded-2xl p-4.5 flex gap-3 text-brand-indigo">
-          <Target className="w-5 h-5 shrink-0 text-brand-indigo mt-0.5" />
-          <div>
-            <h4 className="text-xs font-black">Ready to ace a Hard quiz?</h4>
-            <p className="text-[11px] sm:text-xs text-brand-indigo/80 mt-1 leading-normal font-sans">
-              Studying with Pomodoro focus rounds unlocks deeper recall. Earn +150 XP on every successful focus round and trigger levels!
-            </p>
-          </div>
+        <div className="flex flex-col gap-2">
+          <button 
+            onClick={() => setShowQuizHelp(!showQuizHelp)}
+            className="text-[10px] w-fit sm:text-[11px] font-semibold text-brand-indigo/80 hover:text-brand-indigo flex items-center gap-1 transition-colors bg-brand-indigo/5 px-2 py-1 rounded-full"
+          >
+            <Info className="w-3.5 h-3.5" />
+            Quiz Tips
+          </button>
+          {showQuizHelp && (
+            <div className="bg-brand-indigo/10 border border-brand-indigo/20 rounded-2xl p-4.5 flex gap-3 text-brand-indigo animate-in fade-in slide-in-from-top-1 duration-200">
+              <Target className="w-5 h-5 shrink-0 text-brand-indigo mt-0.5" />
+              <div>
+                <h4 className="text-xs font-black">Ready to ace a Hard quiz?</h4>
+                <p className="text-[11px] sm:text-xs text-brand-indigo/80 mt-1 leading-normal font-sans">
+                  Studying with Pomodoro focus rounds unlocks deeper recall. Earn +150 XP on every successful focus round and trigger levels!
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

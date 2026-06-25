@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import { auth } from "./firebase";
 
 export interface CompanionStudent {
   id: string;
@@ -78,6 +79,9 @@ export const getProgressInfo = () => {
 };
 
 export const getClientUid = () => {
+  if (auth.currentUser) {
+    return auth.currentUser.uid;
+  }
   let cached = localStorage.getItem("ai_study_companion_client_uid");
   if (!cached) {
     cached = "u_" + Math.random().toString(36).substring(2, 11);
@@ -91,7 +95,7 @@ export const getUserIdentity = (user?: any) => {
   let isManual = localStorage.getItem("ai_study_companion_identity_is_manual") === "true";
   
   if (user && !isManual) {
-    const derivedName = user.user_metadata?.name || user.email?.split('@')[0];
+    const derivedName = user.displayName || user.email?.split('@')[0];
     if (derivedName) {
       localStorage.setItem("ai_study_companion_user_identity", derivedName);
       return derivedName;
@@ -274,24 +278,26 @@ export const subscribeToTyping = (listener: (data: { fromId: string, isTyping: b
   };
 };
 
-export const sendDirectMessage = (toId: string, message: string) => {
+export const sendDirectMessage = (toId: string, message: string, existingTimestamp?: number, existingId?: string) => {
   if (globalSocket && globalSocket.connected) {
     const clientUid = getClientUid();
     const userIdentity = getUserIdentity();
     const msgObj = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: existingId || Math.random().toString(36).substring(2, 9),
       toId,
       fromId: clientUid,
       fromName: userIdentity,
       message,
-      timestamp: Date.now()
+      timestamp: existingTimestamp || Date.now()
     };
     sessionMessageHistory.push(msgObj as DirectMessage);
     globalSocket.emit("send-direct-message", {
       toId,
       fromId: clientUid,
       fromName: userIdentity,
-      message
+      message,
+      timestamp: msgObj.timestamp,
+      id: msgObj.id
     });
   }
 };
