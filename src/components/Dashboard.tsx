@@ -20,6 +20,7 @@ import PomodoroTimer from "./PomodoroTimer";
 import FocusMusicPlayer from "./FocusMusicPlayer";
 import StudentOasis from "./StudentOasis";
 import StudyLounge from "./StudyLounge";
+import AdminPanel from "./AdminPanel";
 
 interface JournalEntry {
   id: string;
@@ -67,6 +68,7 @@ interface DashboardProps {
   onSetDailyFocusGoalRounds: (rounds: number) => void;
 
   onAddXp?: (amount: number) => void;
+  onUpdateProgress?: (updates: Partial<UserProgress>) => void;
 }
 
 const getLocalISOString = (d: Date) => {
@@ -106,9 +108,11 @@ export default function Dashboard({
   onSetSleepTimerMinutes,
   dailyFocusGoalRounds,
   onSetDailyFocusGoalRounds,
-  onAddXp
+  onAddXp,
+  onUpdateProgress
 }: DashboardProps) {
   const [showGridHelp, setShowGridHelp] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "journal">("overview");
   const [showJournalHelp, setShowJournalHelp] = useState<boolean>(false);
   const [showQuizHelp, setShowQuizHelp] = useState<boolean>(false);
   
@@ -158,6 +162,11 @@ export default function Dashboard({
     const { addJournalEntry } = await import("../lib/db");
     await addJournalEntry(newEntry);
     
+    // Increment focus seconds in user progress and reward XP
+    if (activeSessionMinutes > 0) {
+      onFocusComplete(activeSessionMinutes);
+    }
+
     // Also update local for immediate feedback
     const updated = [newEntry, ...journalEntries];
     setJournalEntries(updated);
@@ -299,50 +308,68 @@ export default function Dashboard({
   const totalFocusMin = Math.round(progress.totalFocusSeconds / 60);
 
   return (
-    <div id="dashboard-viewport" className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 w-full max-w-[1400px] mx-auto py-2 px-2 sm:px-6 lg:px-12 xl:px-[1.5in]">
+    <div id="dashboard-viewport" className="flex flex-col gap-6 w-full max-w-[1400px] mx-auto py-2 px-2 sm:px-6 lg:px-12 xl:px-[1.5in]">
       
-      {/* Column 1 & 2: Level progress & Analytics */}
-      <div className="lg:col-span-2 space-y-6">
-        
+      {/* Tabs Header */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-zinc-200 dark:border-zinc-800">
+         <button onClick={() => setActiveTab('overview')} className={`px-4 py-2 text-sm font-bold rounded-t-xl transition-colors ${activeTab === 'overview' ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-zinc-500 hover:text-black dark:hover:text-white'}`}>Overview</button>
+         <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 text-sm font-bold rounded-t-xl transition-colors ${activeTab === 'analytics' ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-zinc-500 hover:text-black dark:hover:text-white'}`}>Analytics</button>
+         <button onClick={() => setActiveTab('journal')} className={`px-4 py-2 text-sm font-bold rounded-t-xl transition-colors ${activeTab === 'journal' ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-zinc-500 hover:text-black dark:hover:text-white'}`}>Journal</button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 grid-flow-row">
+      
+      {/* Admin Panel */}
+      {user?.email === "pmarkwelly@gmail.com" && onUpdateProgress && (
+        <div className="lg:col-span-12 order-first">
+          <AdminPanel progress={progress} onUpdateProgress={onUpdateProgress} user={user} />
+        </div>
+      )}
+
+      {/* OVERVIEW CONTENT */}
+        <div className={`lg:col-span-7 flex flex-col order-1 ${activeTab === 'overview' ? 'flex' : 'hidden'}`}>
         {/* Level Card */}
-        <div className="bg-brand-indigo text-white rounded-3xl p-6 shadow-[0_4px_22px_rgba(90,75,255,0.25)] relative overflow-hidden">
+        <div className="bg-black dark:bg-white text-white dark:text-black rounded-3xl p-6 shadow-[0_4px_22px_rgba(0,0,0,0.1)] relative overflow-hidden">
           {/* Ambient background decoration */}
-          <span className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-          <span className="absolute -top-10 -left-10 w-32 h-32 bg-white/15 rounded-full blur-xl" />
+          <span className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 dark:bg-black/5 rounded-full blur-2xl" />
+          <span className="absolute -top-10 -left-10 w-32 h-32 bg-white/15 dark:bg-black/5 rounded-full blur-xl" />
 
           <div className="flex justify-between items-center mb-4">
             <div>
-              <span className="text-[10px] font-black uppercase bg-white/20 text-white/90 px-3 py-1 rounded-full tracking-wider">
+              <span className="text-[10px] font-black uppercase bg-white/20 dark:bg-black/10 text-white/90 dark:text-black/80 px-3 py-1 rounded-full tracking-wider">
                 Student Profile Status
               </span>
-              <h2 className="text-2xl font-black tracking-tight mt-2 flex items-center gap-1.5 text-white">
+              <h2 className="text-2xl font-black tracking-tight mt-2 flex items-center gap-1.5 text-white dark:text-black">
                 Level {progress.level} Scholar <Zap className="w-5 h-5 fill-amber-300 text-amber-300" />
               </h2>
             </div>
             
-            <span className="text-3xl font-black font-mono tracking-tight text-white/90">
-              {progress.xp} <span className="text-xs uppercase text-white/70 font-bold font-sans">XP</span>
+            <span className="text-3xl font-black font-mono tracking-tight text-white/90 dark:text-black/90">
+              {progress.xp} <span className="text-xs uppercase text-white/70 dark:text-black/70 font-bold font-sans">XP</span>
             </span>
           </div>
 
           {/* XP Progress Bar */}
           <div className="space-y-2 mt-6">
-            <div className="flex justify-between text-xs font-semibold text-white/90">
+            <div className="flex justify-between text-xs font-semibold text-white/90 dark:text-black/90">
               <span>{progress.xp} XP Earned</span>
               <span>Need {progress.xpToNextLevel} XP to Level UP</span>
             </div>
             {/* Visual Bar */}
-            <div className="w-full h-3 bg-black/25 rounded-full overflow-hidden border border-white/20">
+            <div className="w-full h-3 bg-black/25 dark:bg-black/10 rounded-full overflow-hidden border border-white/20 dark:border-black/10">
               <div
-                className="h-full bg-white rounded-full transition-all duration-500 shadow-md"
+                className="h-full bg-white dark:bg-black rounded-full transition-all duration-500 shadow-md"
                 style={{ width: `${Math.min((progress.xp / progress.xpToNextLevel) * 100, 100)}%` }}
               />
             </div>
           </div>
         </div>
 
+        </div>
+        
+        <div className={`lg:col-span-5 flex flex-col order-2 ${activeTab === 'overview' ? 'flex' : 'hidden'}`}>
         {/* Daily Study Target */}
-        <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-5 justify-between select-none">
+        <div className="bg-ios-light-secondary h-full w-full dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-5 justify-between select-none">
           <div className="flex items-center gap-4.5 min-w-0 flex-1 w-full">
             {/* SVG Progress Circle Dial */}
             <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center shrink-0">
@@ -362,17 +389,17 @@ export default function Dashboard({
                   cx="40"
                   cy="40"
                   r="34"
-                  className="stroke-brand-indigo transition-all duration-1000 ease-out"
+                  className="stroke-black dark:stroke-white transition-all duration-1000 ease-out"
                   strokeWidth="6"
                   fill="transparent"
                   strokeDasharray={`${2 * Math.PI * 34}`}
-                  strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(Math.floor(progress.totalFocusSeconds / 1500) / dailyFocusGoalRounds, 1))}`}
+                  strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min((progress.totalFocusSeconds / 1500) / dailyFocusGoalRounds, 1))}`}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="absolute flex flex-col items-center">
                 <span className="text-sm font-black font-mono text-black dark:text-white">
-                  {Math.round(Math.min((Math.floor(progress.totalFocusSeconds / 1500) / dailyFocusGoalRounds) * 100, 100))}%
+                  {Math.round(Math.min(((progress.totalFocusSeconds / 1500) / dailyFocusGoalRounds) * 100, 100))}%
                 </span>
                 <span className="text-[8px] uppercase tracking-wider font-extrabold text-ios-secondary-text">Goal</span>
               </div>
@@ -380,10 +407,10 @@ export default function Dashboard({
 
             <div className="min-w-0 flex-1">
               <h3 className="font-extrabold text-[13px] sm:text-sm text-zinc-950 dark:text-white flex items-center gap-1.5 break-words">
-                Target Action Plan <Target className="w-4 h-4 text-brand-indigo shrink-0" />
+                Target Action Plan <Target className="w-4 h-4 text-zinc-950 dark:text-zinc-50 shrink-0" />
               </h3>
               <p className="text-[11px] sm:text-xs text-ios-secondary-text mt-1 max-w-md leading-normal font-sans">
-                Complete and log Pomodoro intervals to achieve your customizable Daily Target: <strong className="text-brand-indigo">{dailyFocusGoalRounds} rounds</strong> today!
+                Complete and log Pomodoro intervals to achieve your customizable Daily Target: <strong className="text-zinc-950 dark:text-zinc-50">{dailyFocusGoalRounds} rounds</strong> today!
               </p>
             </div>
           </div>
@@ -427,6 +454,10 @@ export default function Dashboard({
           </div>
         </div>
 
+        </div>
+
+        {/* ANALYTICS CONTENT */}
+        <div className={`lg:col-span-8 flex flex-col order-1 ${activeTab === 'analytics' ? 'flex' : 'hidden'}`}>
         {/* Bento Grid Analytics Metrics */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           
@@ -445,8 +476,8 @@ export default function Dashboard({
 
           {/* Stats 2: Focus Hours */}
           <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4">
-            <div className="p-2 sm:p-3 bg-brand-indigo/10 rounded-xl shrink-0">
-              <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-brand-indigo" />
+            <div className="p-2 sm:p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl shrink-0">
+              <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-950 dark:text-zinc-50" />
             </div>
             <div>
               <span className="text-base sm:text-2xl font-black font-mono block text-black dark:text-white leading-tight">
@@ -458,8 +489,8 @@ export default function Dashboard({
 
           {/* Stats 3: Academic Mastery % */}
           <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4">
-            <div className="p-2 sm:p-3 bg-brand-indigo/10 rounded-xl shrink-0">
-              <Target className="w-5 h-5 sm:w-6 sm:h-6 text-brand-indigo" />
+            <div className="p-2 sm:p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl shrink-0">
+              <Target className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-950 dark:text-zinc-50" />
             </div>
             <div>
               <span className="text-base sm:text-2xl font-black font-mono block text-black dark:text-white leading-tight">
@@ -471,8 +502,8 @@ export default function Dashboard({
 
           {/* Stats 4: Mastered Terms */}
           <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4">
-            <div className="p-2 sm:p-3 bg-brand-indigo/10 rounded-xl shrink-0">
-              <Award className="w-5 h-5 sm:w-6 sm:h-6 text-brand-indigo" />
+            <div className="p-2 sm:p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl shrink-0">
+              <Award className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-950 dark:text-zinc-50" />
             </div>
             <div>
               <span className="text-base sm:text-2xl font-black font-mono block text-black dark:text-white leading-tight">
@@ -487,7 +518,7 @@ export default function Dashboard({
         {/* Mobile-only Built-in Pomodoro Space */}
         <div className="block lg:hidden space-y-3">
           <h3 className="text-xs font-black text-ios-secondary-text uppercase tracking-widest flex items-center gap-1 font-sans">
-            <BookOpen className="w-3.5 h-3.5 animate-pulse text-brand-indigo" /> Built-in Pomodoro Space
+            <BookOpen className="w-3.5 h-3.5 animate-pulse text-zinc-950 dark:text-zinc-50" /> Built-in Pomodoro Space
           </h3>
           <PomodoroTimer
             mode={timerMode}
@@ -498,14 +529,17 @@ export default function Dashboard({
             setIsRunning={setTimerIsRunning}
           />
         </div>
+        
+        <div className="h-6 lg:hidden"></div>
 
         {/* Study Consistency Heatmap Block */}
         <StudyLounge user={user} />
         
+        <div className="h-6 lg:hidden"></div>
         <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-4.5 h-4.5 text-brand-indigo" />
+              <BookOpen className="w-4.5 h-4.5 text-zinc-950 dark:text-zinc-50" />
               <div>
                 <h3 className="font-extrabold text-[13px] sm:text-sm text-zinc-950 dark:text-white leading-tight">Study Consistency Grid</h3>
                 <span className="text-[11px] sm:text-xs text-ios-secondary-text font-medium mt-0.5 block">Visualize your daily focus metrics in real-time</span>
@@ -514,7 +548,7 @@ export default function Dashboard({
 
             {/* Micro badges */}
             <div className="flex items-center gap-2 flex-wrap max-w-full">
-              <span className="text-[10px] px-2.5 py-1 bg-brand-indigo/10 text-brand-indigo font-black rounded-lg flex items-center gap-1 font-sans">
+              <span className="text-[10px] px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 font-black rounded-lg flex items-center gap-1 font-sans">
                 🔥 {stats.currentStreak} Day Streak
               </span>
               <span className="text-[10px] px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black rounded-lg flex items-center gap-1 font-sans">
@@ -529,7 +563,7 @@ export default function Dashboard({
           <div className="flex flex-col gap-2">
             <button 
               onClick={() => setShowGridHelp(!showGridHelp)}
-              className="text-[10px] w-fit sm:text-[11px] font-semibold text-brand-indigo/80 hover:text-brand-indigo flex items-center gap-1 transition-colors bg-brand-indigo/5 px-2 py-1 rounded-full"
+              className="text-[10px] w-fit sm:text-[11px] font-semibold text-zinc-900/80 hover:text-zinc-950 flex items-center gap-1 transition-colors bg-zinc-100 dark:bg-zinc-850 px-2 py-1 rounded-full"
             >
               <Info className="w-3.5 h-3.5" />
               How this works
@@ -537,7 +571,7 @@ export default function Dashboard({
             {showGridHelp && (
               <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-normal font-medium animate-in fade-in slide-in-from-top-1 duration-200 bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
                 Every logged Pomodoro round, completed quiz, or reflection journal entry builds your daily learning streak! 
-                <strong className="text-brand-indigo ml-1 font-semibold">💡 Click any grid square</strong> to toggle a &quot;Simulated Completed Study Session&quot; for that day and watch your analytics grow!
+                <strong className="text-zinc-950 dark:text-zinc-50 ml-1 font-semibold">💡 Click any grid square</strong> to toggle a &quot;Simulated Completed Study Session&quot; for that day and watch your analytics grow!
               </p>
             )}
           </div>
@@ -592,10 +626,10 @@ export default function Dashboard({
 
                       // Color assignment categories
                       let bgCol = "bg-zinc-200/50 dark:bg-zinc-800/80";
-                      if (count === 1) bgCol = "bg-brand-indigo/15 dark:bg-brand-indigo/10";
-                      else if (count === 2) bgCol = "bg-brand-indigo/35 dark:bg-brand-indigo/25";
-                      else if (count === 3) bgCol = "bg-brand-indigo/65 dark:bg-brand-indigo/50";
-                      else if (count >= 4) bgCol = "bg-brand-indigo shadow-[0_0_6px_rgba(90,75,255,0.3)]";
+                      if (count === 1) bgCol = "bg-zinc-300 dark:bg-zinc-700";
+                      else if (count === 2) bgCol = "bg-zinc-400 dark:bg-zinc-600";
+                      else if (count === 3) bgCol = "bg-zinc-650 dark:bg-zinc-400";
+                      else if (count >= 4) bgCol = "bg-black dark:bg-white shadow-[0_0_6px_rgba(0,0,0,0.2)] dark:shadow-[0_0_6px_rgba(255,255,255,0.4)]";
 
                       const formattedDate = date.toLocaleDateString("en-US", {
                         weekday: "short",
@@ -609,18 +643,18 @@ export default function Dashboard({
                           <button
                             type="button"
                             onClick={() => handleToggleSimulatedDate(dateStr)}
-                            className={`w-full aspect-square rounded-[2px] transition-all cursor-pointer ${bgCol} hover:ring-2 hover:ring-brand-indigo/80 dark:hover:ring-brand-indigo/100`}
+                            className={`w-full aspect-square rounded-[2px] transition-all cursor-pointer ${bgCol} hover:ring-2 hover:ring-black dark:hover:ring-white`}
                             style={{ outline: "none" }}
                             title={`${formattedDate}: ${count} study sessions`}
                           />
                           {/* Tooltip content nested inside */}
-                          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center z-30 min-w-[180px] bg-zinc-950/95 dark:bg-neutral-900 border border-zinc-800 rounded-xl px-2.5 py-1.5 shadow-xl text-[9px] leading-relaxed text-center text-white font-sans">
+                           <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center z-30 min-w-[180px] bg-zinc-950/95 dark:bg-neutral-900 border border-zinc-800 rounded-xl px-2.5 py-1.5 shadow-xl text-[9px] leading-relaxed text-center text-white font-sans">
                             <strong className="font-sans font-extrabold block text-white/95">{formattedDate}</strong>
                             <span className="text-zinc-300 font-medium block mt-0.5">
                               {count === 0 ? "No study activities completed" : `${count} study sessions completed`}
                             </span>
                             {detailsList.length > 0 && (
-                              <div className="mt-1 flex flex-col gap-0.5 border-t border-zinc-800 pt-1 text-[8px] text-brand-indigo font-bold">
+                              <div className="mt-1 flex flex-col gap-0.5 border-t border-zinc-800 pt-1 text-[8px] text-zinc-450 dark:text-zinc-550 font-bold">
                                 {detailsList.map((itm, keyIdx) => (
                                   <span key={keyIdx} className="block">• {itm}</span>
                                 ))}
@@ -644,20 +678,22 @@ export default function Dashboard({
               <span>Less focus</span>
               <div className="flex items-center gap-1 pl-1">
                 <div className="w-2.5 h-2.5 rounded-[2px] bg-zinc-200/50 dark:bg-zinc-800/80" />
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-brand-indigo/15 dark:bg-brand-indigo/10" />
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-brand-indigo/35 dark:bg-brand-indigo/25" />
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-brand-indigo/65 dark:bg-brand-indigo/50" />
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-brand-indigo shadow-[0_0_6px_rgba(90,75,255,0.3)]" />
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-zinc-300 dark:bg-zinc-700" />
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-zinc-400 dark:bg-zinc-600" />
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-zinc-650 dark:bg-zinc-400" />
+                <div className="w-2.5 h-2.5 rounded-[2px] bg-black dark:bg-white shadow-[0_0_6px_rgba(0,0,0,0.2)] dark:shadow-[0_0_6px_rgba(255,255,255,0.4)]" />
               </div>
               <span className="pr-1 font-sans">More focus</span>
             </div>
           </div>
         </div>
 
+        </div>
+        <div className={`lg:col-span-4 flex flex-col order-5 ${activeTab === 'analytics' ? 'flex' : 'hidden'}`}>
         {/* Quiz Grade History Logs */}
-        <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
+        <div className="bg-ios-light-secondary h-full w-full dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-4.5 h-4.5 text-brand-indigo" />
+            <Activity className="w-4.5 h-4.5 text-zinc-950 dark:text-zinc-50" />
             <h3 className="font-extrabold text-[13px] sm:text-sm text-zinc-950 dark:text-white leading-tight">Academic Assessment History</h3>
           </div>
 
@@ -673,12 +709,12 @@ export default function Dashboard({
                       {log.fileName.replace(/\.[^/.]+$/, "")}
                     </h4>
                     <span className="text-[10px] sm:text-[11px] text-ios-secondary-text mt-0.5 inline-block capitalize font-medium">
-                      Difficulty: <strong className="text-brand-indigo font-bold">{log.difficulty}</strong> • {log.date}
+                      Difficulty: <strong className="text-zinc-950 dark:text-zinc-50 font-bold">{log.difficulty}</strong> • {log.date}
                     </span>
                   </div>
                   
                   <div className="text-right">
-                    <span className="text-xs font-black text-brand-indigo font-mono">
+                    <span className="text-xs font-black text-zinc-950 dark:text-zinc-50 font-mono">
                       {log.score} / {log.total}
                     </span>
                     <span className="text-[10px] sm:text-[11px] block text-ios-secondary-text mt-0.5">
@@ -695,11 +731,15 @@ export default function Dashboard({
           )}
         </div>
 
+        </div>
+
+        {/* JOURNAL CONTENT */}
+        <div className={`lg:col-span-8 flex flex-col order-1 ${activeTab === 'journal' ? 'flex' : 'hidden'}`}>
         {/* Dynamic Study Journal Notebook */}
         <div id="reflection-journal-section" className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-brand-indigo/10 rounded-lg">
-              <PenTool className="w-4 h-4 text-brand-indigo" />
+            <div className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+              <PenTool className="w-4 h-4 text-zinc-950 dark:text-zinc-50" />
             </div>
             <h3 className="font-extrabold text-[13px] sm:text-sm text-zinc-950 dark:text-white leading-tight">Active Session Reflection Journal</h3>
           </div>
@@ -707,7 +747,7 @@ export default function Dashboard({
           <div className="flex flex-col gap-2">
             <button 
               onClick={(e) => { e.preventDefault(); setShowJournalHelp(!showJournalHelp); }}
-              className="text-[10px] w-fit sm:text-[11px] font-semibold text-brand-indigo/80 hover:text-brand-indigo flex items-center gap-1 transition-colors bg-brand-indigo/5 px-2 py-1 rounded-full"
+              className="text-[10px] w-fit sm:text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1 transition-colors bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full"
             >
               <Info className="w-3.5 h-3.5" />
               Why keep a journal?
@@ -721,7 +761,7 @@ export default function Dashboard({
 
           <form onSubmit={handleAddJournalEntry} className="space-y-4 bg-ios-light-bg dark:bg-ios-dark-bg p-4 sm:p-5 rounded-2xl border border-zinc-200/50 dark:border-zinc-950">
             <div className="space-y-1.5">
-              <label htmlFor="journal-note-textarea" className="text-[10px] font-black text-brand-indigo uppercase tracking-wider block font-sans">
+              <label htmlFor="journal-note-textarea" className="text-[10px] font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-wider block font-sans">
                 💡 Lesson Notes & Key Realizations
               </label>
               <textarea
@@ -730,8 +770,33 @@ export default function Dashboard({
                 onChange={(e) => setNewJournalNote(e.target.value)}
                 placeholder="What formulas, vocabulary, or systems did you commit to memory? (e.g., Reviewed mitochondria electron transfer chains...)"
                 rows={3}
-                className="w-full text-xs p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-indigo/25 focus:border-brand-indigo outline-none placeholder:text-zinc-400 select-text font-medium min-h-[90px] resize-none leading-relaxed transition-all duration-250"
+                className="w-full text-xs p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black/25 dark:focus:ring-white/25 focus:border-black dark:focus:border-white outline-none placeholder:text-zinc-400 select-text font-medium min-h-[90px] resize-none leading-relaxed transition-all duration-250"
               />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-black text-ios-secondary-text uppercase tracking-wider block font-sans">
+                ⏱️ Focus Session Duration to Log
+              </span>
+              <div className="grid grid-cols-4 gap-2 w-full">
+                {([0, 15, 25, 50] as const).map((mins) => {
+                  const isActive = activeSessionMinutes === mins;
+                  return (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setActiveSessionMinutes(mins)}
+                      className={`py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center border font-sans ${
+                        isActive
+                          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-[1.02]"
+                          : "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-850 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:text-black dark:hover:text-white"
+                      }`}
+                    >
+                      {mins === 0 ? "No Time" : `${mins} min`}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -752,7 +817,7 @@ export default function Dashboard({
                       onClick={() => setNewJournalMood(m)}
                       className={`py-2 rounded-xl text-xs font-black transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 border font-sans ${
                         isActive
-                          ? "bg-brand-indigo text-white border-brand-indigo shadow-[0_2px_8px_rgba(90,75,255,0.25)] scale-[1.02]"
+                          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-[1.02]"
                           : "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-850 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:text-black dark:hover:text-white"
                       }`}
                     >
@@ -769,9 +834,9 @@ export default function Dashboard({
               <button
                 type="submit"
                 disabled={!newJournalNote.trim()}
-                className="w-full sm:w-auto px-5 py-2.5 bg-brand-indigo hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-xs rounded-xl transition-all shadow-[0_2px_10px_rgba(90,75,255,0.15)] flex items-center justify-center gap-1.5 font-sans"
+                className="w-full sm:w-auto px-5 py-2.5 bg-black dark:bg-white hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed text-white dark:text-black font-extrabold text-xs rounded-xl transition-all shadow-[0_2px_10px_rgba(0,0,0,0.1)] flex items-center justify-center gap-1.5 font-sans"
               >
-                <PenTool className="w-3.5 h-3.5 text-white" /> Log Reflection Note
+                <PenTool className="w-3.5 h-3.5" /> Log Reflection Note
               </button>
             </div>
           </form>
@@ -817,11 +882,11 @@ export default function Dashboard({
 
       </div>
 
-      {/* Column 3: Beautiful Built-in Pomodoro Space */}
-      <div className="space-y-6">
-        <div className="hidden lg:block select-none">
+      {/* SHARED COLUMN 3 WIDGETS */}
+        <div className={`lg:col-span-4 flex flex-col ${activeTab === 'overview' ? 'order-3 flex' : activeTab === 'journal' ? 'order-2 flex' : 'hidden'}`}>
+        <div className="hidden lg:block select-none w-full h-full">
           <h3 className="text-xs font-black text-ios-secondary-text uppercase tracking-widest mb-4 flex items-center gap-1">
-            <BookOpen className="w-3.5 h-3.5 animate-pulse text-brand-indigo" /> Built-in Pomodoro Space
+            <BookOpen className="w-3.5 h-3.5 animate-pulse text-zinc-950 dark:text-zinc-50" /> Built-in Pomodoro Space
           </h3>
           <PomodoroTimer
             mode={timerMode}
@@ -833,6 +898,9 @@ export default function Dashboard({
           />
         </div>
 
+        </div>
+        
+        <div className={`lg:col-span-4 flex flex-col ${activeTab === 'overview' ? 'order-5 flex' : activeTab === 'journal' ? 'order-3 flex' : 'hidden'}`}>
         <FocusMusicPlayer
           tracks={musicTracks}
           selectedTrackId={selectedTrackId}
@@ -851,28 +919,33 @@ export default function Dashboard({
           sleepTimerSecondsLeft={sleepTimerSecondsLeft}
           onSetSleepTimerMinutes={onSetSleepTimerMinutes}
         />
+        </div>
 
+        <div className={`lg:col-span-4 flex flex-col ${activeTab === 'overview' ? 'order-4 flex' : activeTab === 'analytics' ? 'order-2 flex' : 'hidden'}`}>
         <StudentOasis 
           progress={progress} 
           onAddXp={onAddXp} 
           journalCount={journalEntries.length} 
         />
 
+        </div>
+
+        <div className={`lg:col-span-4 flex flex-col gap-2 ${activeTab === 'overview' ? 'order-6 flex' : activeTab === 'analytics' ? 'order-3 flex' : 'hidden'}`}>
         {/* Quick motivational cards */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 w-full h-full">
           <button 
             onClick={() => setShowQuizHelp(!showQuizHelp)}
-            className="text-[10px] w-fit sm:text-[11px] font-semibold text-brand-indigo/80 hover:text-brand-indigo flex items-center gap-1 transition-colors bg-brand-indigo/5 px-2 py-1 rounded-full"
+            className="text-[10px] w-fit sm:text-[11px] font-semibold text-zinc-750 dark:text-zinc-300 flex items-center gap-1 transition-colors bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full"
           >
             <Info className="w-3.5 h-3.5" />
             Quiz Tips
           </button>
           {showQuizHelp && (
-            <div className="bg-brand-indigo/10 border border-brand-indigo/20 rounded-2xl p-4.5 flex gap-3 text-brand-indigo animate-in fade-in slide-in-from-top-1 duration-200">
-              <Target className="w-5 h-5 shrink-0 text-brand-indigo mt-0.5" />
+            <div className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl p-4.5 flex gap-3 text-zinc-900 dark:text-zinc-100 animate-in fade-in slide-in-from-top-1 duration-200">
+              <Target className="w-5 h-5 shrink-0 text-zinc-950 dark:text-zinc-50 mt-0.5" />
               <div>
                 <h4 className="text-xs font-black">Ready to ace a Hard quiz?</h4>
-                <p className="text-[11px] sm:text-xs text-brand-indigo/80 mt-1 leading-normal font-sans">
+                <p className="text-[11px] sm:text-xs text-zinc-700 dark:text-zinc-300 mt-1 leading-normal font-sans">
                   Studying with Pomodoro focus rounds unlocks deeper recall. Earn +150 XP on every successful focus round and trigger levels!
                 </p>
               </div>
@@ -881,6 +954,7 @@ export default function Dashboard({
         </div>
       </div>
 
+      </div>
     </div>
   );
 }

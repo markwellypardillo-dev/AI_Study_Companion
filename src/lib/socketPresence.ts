@@ -13,6 +13,8 @@ export interface CompanionStudent {
   avatarChar: string;
   socketId?: string;
   lastSeen?: number;
+  photoURL?: string;
+  deviceId?: string;
 }
 
 export const getActiveStudyMetadata = () => {
@@ -78,6 +80,29 @@ export const getProgressInfo = () => {
   return { level: 1, streak: 0 };
 };
 
+export const getPhotoURL = () => {
+  const cached = localStorage.getItem("ai_study_companion_photo_url");
+  if (cached) return cached;
+  
+  const raw = localStorage.getItem("ai_study_companion_progress");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed.photoURL || "";
+    } catch (err) {}
+  }
+  return "";
+};
+
+export const getDeviceId = () => {
+  let cached = localStorage.getItem("ai_study_companion_device_id");
+  if (!cached) {
+    cached = "dev_" + Math.random().toString(36).substring(2, 11);
+    localStorage.setItem("ai_study_companion_device_id", cached);
+  }
+  return cached;
+};
+
 export const getClientUid = () => {
   if (auth.currentUser) {
     return auth.currentUser.uid;
@@ -131,7 +156,9 @@ export const initGlobalPresence = (user?: any) => {
             mode: metadata.mode,
             streak: info.streak,
             level: info.level,
-            avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S"
+            avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S",
+            photoURL: getPhotoURL(),
+            deviceId: getDeviceId()
           });
       }
       return globalSocket;
@@ -159,13 +186,16 @@ export const initGlobalPresence = (user?: any) => {
       mode: metadata.mode,
       streak: info.streak,
       level: info.level,
-      avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S"
+      avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S",
+      photoURL: getPhotoURL(),
+      deviceId: getDeviceId()
     });
   });
 
   globalSocket.on("lounge-update", (allActivePresence: CompanionStudent[]) => {
     const clientUid = getClientUid();
-    currentCompanions = allActivePresence.filter(p => p.id !== clientUid);
+    const deviceId = getDeviceId();
+    currentCompanions = allActivePresence.filter(p => p.id !== clientUid && p.deviceId !== deviceId);
     handleUpdate();
   });
 
@@ -176,6 +206,19 @@ export const initGlobalPresence = (user?: any) => {
 
   globalSocket.on("user-typing", (data: any) => {
     typingListeners.forEach(l => l(data));
+  });
+
+  globalSocket.on("global-announcement", (data: any) => {
+    announcementListeners.forEach(l => l(data));
+  });
+
+  globalSocket.on("kicked", (data: any) => {
+    alert(data.reason || "You were kicked.");
+    window.location.reload();
+  });
+
+  globalSocket.on("admin-warning", (data: any) => {
+    alert(`⚠️ SYSTEM WARNING:\n\n${data.message}`);
   });
 
   globalSocket.on("disconnect", () => {
@@ -198,7 +241,9 @@ export const initGlobalPresence = (user?: any) => {
       mode: metadata.mode,
       streak: info.streak,
       level: info.level,
-      avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S"
+      avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S",
+      photoURL: getPhotoURL(),
+      deviceId: getDeviceId()
     });
   }, 10000);
 
@@ -228,7 +273,9 @@ export const forceUpdatePresence = (user?: any) => {
           mode: metadata.mode,
           streak: info.streak,
           level: info.level,
-          avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S"
+          avatarChar: userIdentity.charAt(userIdentity.indexOf("_") + 1) || userIdentity.charAt(0) || "S",
+          photoURL: getPhotoURL(),
+          deviceId: getDeviceId()
         });
     }
 };
@@ -263,6 +310,32 @@ export interface DirectMessage {
 export const sessionMessageHistory: DirectMessage[] = [];
 let messageListeners: Array<(msg: DirectMessage) => void> = [];
 let typingListeners: Array<(data: { fromId: string, isTyping: boolean }) => void> = [];
+let announcementListeners: Array<(data: { id: string, message: string, fromName: string, timestamp: number }) => void> = [];
+
+export const subscribeToAnnouncements = (listener: (data: { id: string, message: string, fromName: string, timestamp: number }) => void) => {
+  announcementListeners.push(listener);
+  return () => {
+    announcementListeners = announcementListeners.filter(l => l !== listener);
+  };
+};
+
+export const sendGlobalAnnouncement = (message: string, fromName?: string) => {
+  if (globalSocket && globalSocket.connected) {
+    globalSocket.emit("send-global-announcement", { message, fromName: fromName || "System Admin" });
+  }
+};
+
+export const kickUserFromLounge = (targetId: string) => {
+  if (globalSocket && globalSocket.connected) {
+    globalSocket.emit("kick-user", { targetId });
+  }
+};
+
+export const sendAdminWarning = (targetId: string, message: string) => {
+  if (globalSocket && globalSocket.connected) {
+    globalSocket.emit("send-admin-warning", { targetId, message });
+  }
+};
 
 export const subscribeToMessages = (listener: (msg: DirectMessage) => void) => {
   messageListeners.push(listener);

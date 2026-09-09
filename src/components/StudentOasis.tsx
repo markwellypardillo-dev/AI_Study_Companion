@@ -501,8 +501,8 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
 
         {/* Right column - Balanced Drops Pill */}
         <div className="flex items-center justify-end">
-          <div className="flex items-center gap-1 bg-brand-indigo/10 p-1 px-2 sm:px-2.5 rounded-2xl text-brand-indigo font-black text-[10px] sm:text-xs uppercase font-mono shrink-0 select-none">
-            <Droplet className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-brand-indigo" /> {waterDrops} Drops
+          <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 px-2 sm:px-2.5 rounded-2xl text-zinc-900 dark:text-zinc-100 font-black text-[10px] sm:text-xs uppercase font-mono shrink-0 select-none">
+            <Droplet className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-zinc-900 dark:text-zinc-100" /> {waterDrops} Drops
           </div>
         </div>
       </div>
@@ -513,7 +513,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
           onClick={() => setActiveTab("garden")}
           className={`py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all uppercase flex items-center justify-center gap-1 ${
             activeTab === "garden"
-              ? "bg-brand-indigo text-white shadow-sm"
+              ? "bg-black dark:bg-white text-white dark:text-black shadow-sm"
               : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
           }`}
         >
@@ -524,7 +524,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
           onClick={() => setActiveTab("synth")}
           className={`py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all uppercase flex items-center justify-center gap-1 ${
             activeTab === "synth"
-              ? "bg-brand-indigo text-white shadow-sm"
+              ? "bg-black dark:bg-white text-white dark:text-black shadow-sm"
               : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
           }`}
         >
@@ -535,7 +535,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
           onClick={() => setActiveTab("quests")}
           className={`py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all uppercase flex items-center justify-center gap-1 ${
             activeTab === "quests"
-              ? "bg-brand-indigo text-white shadow-sm"
+              ? "bg-black dark:bg-white text-white dark:text-black shadow-sm"
               : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
           }`}
         >
@@ -555,7 +555,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
               <span className="text-4xl animate-bounce" style={{ animationDuration: "3.5s" }}>
                 {growthStage.emoji}
               </span>
-              <span className="absolute -bottom-1 -right-1 bg-brand-indigo text-white text-[9px] font-black w-5.5 h-5.5 rounded-full flex items-center justify-center shadow">
+              <span className="absolute -bottom-1 -right-1 bg-black dark:bg-white text-white dark:text-black text-[9px] font-black w-5.5 h-5.5 rounded-full flex items-center justify-center shadow">
                 {growthStage.stage}
               </span>
             </div>
@@ -569,7 +569,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
                   value={tempName}
                   onChange={(e) => setTempName(e.target.value)}
                   placeholder="Companion Name"
-                  className="px-2 py-0.5 max-w-[120px] text-xs font-extrabold text-black dark:text-white bg-white dark:bg-zinc-900 border border-brand-indigo rounded focus:outline-none"
+                  className="px-2 py-0.5 max-w-[120px] text-xs font-extrabold text-black dark:text-white bg-white dark:bg-zinc-900 border border-black dark:border-white rounded focus:outline-none"
                   autoFocus
                 />
                 <button 
@@ -607,7 +607,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             <div className="w-full mt-3.5 space-y-1">
               <div className="flex justify-between text-[8.5px] font-bold text-ios-secondary-text font-serif">
                 <span>Growth Progress: {growthPoints} XP</span>
-                <span className="text-brand-indigo font-sans">{growthStage.nextTarget}</span>
+                <span className="text-zinc-900 dark:text-zinc-100 font-sans">{growthStage.nextTarget}</span>
               </div>
               <div className="h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full w-full overflow-hidden">
                 <div 
@@ -633,7 +633,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             <button
               onClick={startBreathingLoop}
               disabled={isBreathing}
-              className="py-2 bg-brand-indigo hover:opacity-95 text-white font-bold text-[9.5px] uppercase tracking-wider rounded-xl transition-all disabled:opacity-75 flex items-center justify-center gap-1 shadow-sm font-sans"
+              className="py-2 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 font-bold text-[9.5px] uppercase tracking-wider rounded-xl transition-all disabled:opacity-75 flex items-center justify-center gap-1 shadow-sm font-sans"
             >
               <Compass className="w-3 h-3 shrink-0" /> Rest & Breathe
             </button>
@@ -641,18 +641,18 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
 
           {/* Breathing Loop visual overlays */}
           {isBreathing ? (
-            <div className="p-4 bg-brand-indigo/10 border border-brand-indigo/20 rounded-2xl text-center space-y-4 font-sans animate-fade-in relative z-20">
-              <div className="flex items-center justify-center gap-1 text-xs text-brand-indigo font-black uppercase">
-                <Heart className="w-3.5 h-3.5 text-brand-indigo animate-pulse" /> Respiration Rest Period
+            <div className="p-4 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-center space-y-4 font-sans animate-fade-in relative z-20">
+              <div className="flex items-center justify-center gap-1 text-xs text-black dark:text-white font-black uppercase">
+                <Heart className="w-3.5 h-3.5 text-black dark:text-white animate-pulse" /> Respiration Rest Period
               </div>
 
               {/* Dynamic pulse circle */}
               <div className="flex items-center justify-center py-2 h-24">
                 <div 
-                  className={`w-20 h-20 rounded-full border-4 border-brand-indigo/30 bg-brand-indigo flex items-center justify-center text-white font-mono text-xl font-black shadow-lg transition-all duration-[4000ms] ${
-                    breathingPhase === "inhale" ? "scale-[1.3] bg-brand-indigo" :
-                    breathingPhase === "hold" ? "scale-[1.3] bg-amber-500 border-amber-500/30" :
-                    "scale-[0.8] bg-zinc-600 border-zinc-600/30"
+                  className={`w-20 h-20 rounded-full border-4 border-black/30 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-mono text-xl font-black shadow-lg transition-all duration-[4000ms] ${
+                    breathingPhase === "inhale" ? "scale-[1.3] bg-black dark:bg-white" :
+                    breathingPhase === "hold" ? "scale-[1.3] bg-amber-500 border-amber-500/30 text-white" :
+                    "scale-[0.8] bg-zinc-600 border-zinc-600/30 text-white"
                   }`}
                 >
                   {breathingSecsLeft}s
@@ -695,7 +695,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
               onClick={toggleSynthMute}
               className={`p-2 rounded-xl transition-all border flex items-center justify-center gap-1.5 font-bold text-xs ${
                 synthRunning
-                  ? "bg-brand-indigo text-white border-brand-indigo shadow-md"
+                  ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
                   : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-650 hover:bg-zinc-100"
               }`}
             >
@@ -718,13 +718,13 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
               onClick={() => handleSelectSoundType("binaural")}
               className={`w-full p-2.5 rounded-xl border text-left transition-all ${
                 synthSound === "binaural"
-                  ? "border-brand-indigo bg-brand-indigo/5 text-brand-indigo"
+                  ? "border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white"
                   : "border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-90 w-full"
               }`}
             >
               <div className="flex justify-between items-center">
                 <span className="text-xs font-black">⚡ Neural 40Hz Binaural Beats</span>
-                {synthRunning && synthSound === "binaural" && <span className="text-[9px] uppercase tracking-widest font-extrabold text-brand-indigo animate-pulse">Running</span>}
+                {synthRunning && synthSound === "binaural" && <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-900 dark:text-zinc-100 animate-pulse">Running</span>}
               </div>
               <p className="text-[10px] sm:text-[11px] text-ios-secondary-text mt-0.5 leading-normal">
                 Detuned structural frequencies to optimize deep concentration and memory.
@@ -736,13 +736,13 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
               onClick={() => handleSelectSoundType("pink_rain")}
               className={`w-full p-2.5 rounded-xl border text-left transition-all ${
                 synthSound === "pink_rain"
-                  ? "border-brand-indigo bg-brand-indigo/5 text-brand-indigo"
+                  ? "border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white"
                   : "border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-90 w-full"
               }`}
             >
               <div className="flex justify-between items-center">
                 <span className="text-xs font-black">🌧️ Synthetic Cozy Rain crackle</span>
-                {synthRunning && synthSound === "pink_rain" && <span className="text-[9px] uppercase tracking-widest font-extrabold text-brand-indigo animate-pulse">Active</span>}
+                {synthRunning && synthSound === "pink_rain" && <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-900 dark:text-zinc-100 animate-pulse">Active</span>}
               </div>
               <p className="text-[10px] sm:text-[11px] text-ios-secondary-text mt-0.5 leading-normal">
                 Modulated bandpassed pink noise to simulate a remote soft rainfall.
@@ -754,13 +754,13 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
               onClick={() => handleSelectSoundType("cosmic_drone")}
               className={`w-full p-2.5 rounded-xl border text-left transition-all ${
                 synthSound === "cosmic_drone"
-                  ? "border-brand-indigo bg-brand-indigo/5 text-brand-indigo"
+                  ? "border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white"
                   : "border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-90 w-full"
               }`}
             >
               <div className="flex justify-between items-center">
                 <span className="text-xs font-black">🪐 Celestial Cosmic Focus Drone</span>
-                {synthRunning && synthSound === "cosmic_drone" && <span className="text-[9px] uppercase tracking-widest font-extrabold text-brand-indigo animate-pulse">Active</span>}
+                {synthRunning && synthSound === "cosmic_drone" && <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-900 dark:text-zinc-100 animate-pulse">Active</span>}
               </div>
               <p className="text-[10px] sm:text-[11px] text-ios-secondary-text mt-0.5 leading-normal">
                 Detuned sweeping oscillators to mask high-frequency distractions.
@@ -781,7 +781,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
               step="0.05"
               value={synthVolume}
               onChange={(e) => setSynthVolume(parseFloat(e.target.value))}
-              className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-brand-indigo focus:outline-none"
+              className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-black dark:accent-white focus:outline-none"
             />
           </div>
 
@@ -808,7 +808,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             {/* Quest 1 */}
             <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-zinc-200/40 dark:border-zinc-900/45">
               <div>
-                <span className="text-[10px] sm:text-[11px] font-black text-brand-indigo block uppercase">Mindfulness Rest</span>
+                <span className="text-[10px] sm:text-[11px] font-black text-zinc-900 dark:text-zinc-100 block uppercase">Mindfulness Rest</span>
                 <h4 className="text-xs font-black text-black dark:text-white mt-0.5">🌿 Breath & Hydrate</h4>
                 <p className="text-[10px] sm:text-[11px] text-ios-secondary-text leading-tight mt-0.5">Complete a 12-second Mindfulness box breathing session</p>
               </div>
@@ -834,7 +834,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             {/* Quest 2 */}
             <div className="flex items-center justify-between gap-3 py-2.5 border-b border-zinc-200/40 dark:border-zinc-900/45">
               <div>
-                <span className="text-[10px] sm:text-[11px] font-black text-brand-indigo block uppercase">Oasis Cultivation</span>
+                <span className="text-[10px] sm:text-[11px] font-black text-zinc-900 dark:text-zinc-100 block uppercase">Oasis Cultivation</span>
                 <h4 className="text-xs font-black text-black dark:text-white mt-0.5">🌱 Sprout Keeper</h4>
                 <p className="text-[10px] sm:text-[11px] text-ios-secondary-text leading-tight mt-0.5">Water your focus seedling to advance growth points</p>
               </div>
@@ -860,7 +860,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             {/* Quest 3 */}
             <div className="flex items-center justify-between gap-3 pt-2.5">
               <div>
-                <span className="text-[10px] sm:text-[11px] font-black text-brand-indigo block uppercase">Cognitive Reflection</span>
+                <span className="text-[10px] sm:text-[11px] font-black text-zinc-900 dark:text-zinc-100 block uppercase">Cognitive Reflection</span>
                 <h4 className="text-xs font-black text-black dark:text-white mt-0.5">📝 Thoughtful Scribe</h4>
                 <p className="text-[10px] sm:text-[11px] text-ios-secondary-text leading-tight mt-0.5">Log at least one Study Reflection Note in your Journal</p>
               </div>

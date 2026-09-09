@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Users, Shuffle, Sparkles, User, Flame, GraduationCap, Edit2, Check, X, Wifi } from "lucide-react";
+import { Users, Shuffle, Sparkles, User, Flame, GraduationCap, Edit2, Check, X, Wifi, Camera, Trash2 } from "lucide-react";
 import { 
   CompanionStudent, 
   subscribeToPresence, 
@@ -31,6 +31,7 @@ const SUBJECTS = [
 
 export default function StudyLounge({ user }: { user?: any }) {
   const [userIdentity, setUserIdentity] = useState<string>(() => getUserIdentity(user));
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [companions, setCompanions] = useState<CompanionStudent[]>([]);
   const [activeCount, setActiveCount] = useState<number>(1);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -103,6 +104,76 @@ export default function StudyLounge({ user }: { user?: any }) {
     return () => window.removeEventListener("open-chat-action", handleOpenChatAction);
   }, [companions]);
 
+  const [localPhotoURL, setLocalPhotoURL] = useState<string>(() => {
+    return localStorage.getItem("ai_study_companion_photo_url") || "";
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      const photo = localStorage.getItem("ai_study_companion_photo_url") || "";
+      setLocalPhotoURL(photo);
+    };
+    window.addEventListener("local-activity-updated", handleUpdate);
+    
+    const handleUpdateProfilePhoto = (e: any) => {
+      setLocalPhotoURL(e.detail.photoURL || "");
+    };
+    window.addEventListener("update-profile-photo", handleUpdateProfilePhoto);
+    
+    return () => {
+      window.removeEventListener("local-activity-updated", handleUpdate);
+      window.removeEventListener("update-profile-photo", handleUpdateProfilePhoto);
+    };
+  }, []);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const size = 128; // standard compact size for avatars
+        canvas.width = size;
+        canvas.height = size;
+        
+        if (ctx) {
+          // Crop to square and draw
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+          
+          const base64Data = canvas.toDataURL("image/jpeg", 0.85);
+          localStorage.setItem("ai_study_companion_photo_url", base64Data);
+          setLocalPhotoURL(base64Data);
+          
+          // Dispatch custom event to notify parent App state (to store in progress and Firestore)
+          window.dispatchEvent(
+            new CustomEvent("update-profile-photo", {
+              detail: { photoURL: base64Data }
+            })
+          );
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    localStorage.removeItem("ai_study_companion_photo_url");
+    setLocalPhotoURL("");
+    window.dispatchEvent(
+      new CustomEvent("update-profile-photo", {
+        detail: { photoURL: "" }
+      })
+    );
+  };
+
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editInputValue, setEditInputValue] = useState<string>("");
 
@@ -131,12 +202,12 @@ export default function StudyLounge({ user }: { user?: any }) {
   return (
     <div 
       id="study-lounge-card" 
-      className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border border-white/40 dark:border-white/10 rounded-3xl p-4.5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] space-y-3.5 before:absolute before:inset-0 before:bg-gradient-to-br before:from-brand-indigo/10 before:to-transparent before:opacity-50 before:pointer-events-none"
+      className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border border-white/40 dark:border-white/10 rounded-3xl p-4.5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] space-y-3.5 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none"
     >
       {/* Title Header */}
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-1.5">
-          <div className="p-0.5 px-2 bg-brand-indigo/20 backdrop-blur-md text-brand-indigo dark:text-brand-indigo-light rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 font-sans border border-brand-indigo/20">
+          <div className="p-0.5 px-2 bg-zinc-200/50 dark:bg-zinc-800/80 backdrop-blur-md text-zinc-900 dark:text-zinc-100 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 font-sans border border-zinc-300 dark:border-zinc-700">
             <Users className="w-3 h-3" /> Live Study Lounge
           </div>
           {isConnected ? (
@@ -146,7 +217,7 @@ export default function StudyLounge({ user }: { user?: any }) {
           )}
         </div>
         <span className="text-[9px] font-mono text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider backdrop-blur bg-white/30 dark:bg-black/30 px-2 py-0.5 rounded-full border border-white/20 dark:border-white/10">
-          {activeCount} Active
+          {activeCount} Peers
         </span>
       </div>
 
@@ -161,9 +232,18 @@ export default function StudyLounge({ user }: { user?: any }) {
             onSubmit={(e) => { e.preventDefault(); saveIdentity(); }}
             className="flex-1 flex items-center gap-2 min-w-0"
           >
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-indigo to-violet-500 text-white flex items-center justify-center font-bold text-xxs shrink-0 shadow-lg border border-white/20">
-              <User className="w-3.5 h-3.5 text-white" />
-            </div>
+            {localPhotoURL ? (
+              <img
+                src={localPhotoURL}
+                alt="Profile"
+                className="w-7 h-7 rounded-lg object-cover border border-white/20 shadow-md shrink-0"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center font-bold text-xxs shrink-0 shadow-lg border border-zinc-350 dark:border-zinc-700">
+                <User className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
+              </div>
+            )}
             <div className="flex-1 min-w-0 flex items-center gap-1">
               <input
                 id="input-edit-lobby-nickname"
@@ -171,7 +251,7 @@ export default function StudyLounge({ user }: { user?: any }) {
                 value={editInputValue}
                 onChange={(e) => setEditInputValue(e.target.value)}
                 maxLength={22}
-                className="flex-grow min-w-0 bg-transparent border-b border-brand-indigo/50 focus:border-brand-indigo focus:outline-none text-[11px] font-extrabold text-zinc-900 dark:text-white p-0 h-5"
+                className="flex-grow min-w-0 bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:border-black dark:focus:border-white focus:outline-none text-[11px] font-extrabold text-zinc-900 dark:text-white p-0 h-5"
                 placeholder="New nickname..."
                 autoFocus
               />
@@ -181,15 +261,50 @@ export default function StudyLounge({ user }: { user?: any }) {
           </form>
         ) : (
           <div className="flex-1 flex items-center justify-between gap-2 min-w-0">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <button onClick={startEditing} className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-indigo to-violet-600 hover:brightness-110 text-white flex items-center justify-center font-bold text-xxs shrink-0 shadow-lg border border-white/20 transition-all cursor-pointer">
-                <User className="w-4 h-4 text-white drop-shadow-sm" />
-              </button>
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="relative shrink-0 group">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                {localPhotoURL ? (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative w-8 h-8 rounded-lg overflow-hidden border border-white/40 dark:border-white/10 shadow-lg group cursor-pointer transition-transform duration-200 hover:scale-105"
+                    title="Change profile picture"
+                  >
+                    <img
+                      src={localPhotoURL}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Camera className="w-3.5 h-3.5 text-white" />
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:brightness-110 flex items-center justify-center font-bold shrink-0 shadow-lg border border-zinc-300 dark:border-zinc-700 transition-all cursor-pointer relative"
+                    title="Upload profile picture"
+                  >
+                    <User className="w-4 h-4 text-zinc-900 dark:text-zinc-100 drop-shadow-sm group-hover:opacity-35 transition-opacity" />
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Camera className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
+                    </div>
+                  </button>
+                )}
+              </div>
+
               <div 
                 className="min-w-0 cursor-pointer flex-1 group" 
                 onClick={startEditing} 
               >
-                <span className="text-[9px] font-black uppercase text-brand-indigo dark:text-brand-indigo-light block leading-none mb-1 flex items-center gap-1 opacity-80">
+                <span className="text-[9px] font-black uppercase text-zinc-700 dark:text-zinc-300 block leading-none mb-1 flex items-center gap-1 opacity-80">
                   Your Lobby Alias <Edit2 className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </span>
                 <div className="font-extrabold text-[12px] text-zinc-900 dark:text-white truncate flex items-center gap-1.5 leading-none">
@@ -198,13 +313,25 @@ export default function StudyLounge({ user }: { user?: any }) {
               </div>
             </div>
 
-            <button
-              onClick={handleRerollIdentity}
-              className="p-1.5 hover:bg-white/50 dark:hover:bg-black/50 text-brand-indigo dark:text-brand-indigo-light rounded-md transition-all border border-brand-indigo/0 hover:border-brand-indigo/20 cursor-pointer shrink-0"
-              title="Roll New Random Identity"
-            >
-              <Shuffle className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-1">
+              {localPhotoURL && (
+                <button
+                  onClick={handleRemovePhoto}
+                  className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-black dark:hover:text-white rounded-md transition-all cursor-pointer shrink-0"
+                  title="Reset profile picture to default initials"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              <button
+                onClick={handleRerollIdentity}
+                className="p-1.5 hover:bg-white/50 dark:hover:bg-black/50 text-zinc-700 dark:text-zinc-300 rounded-md transition-all border border-transparent cursor-pointer shrink-0"
+                title="Roll New Random Identity"
+              >
+                <Shuffle className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -225,16 +352,25 @@ export default function StudyLounge({ user }: { user?: any }) {
               >
                 {/* Avatar Initial with Status Dot */}
                 <div className="relative shrink-0">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 text-zinc-700 dark:text-zinc-200 border border-white/60 dark:border-white/5 flex items-center justify-center font-black text-xs font-mono shadow-inner shadow-black/5 select-none">
-                    {c.avatarChar}
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#1a1c23] rounded-full shadow-sm" />
+                  {c.photoURL ? (
+                    <img
+                      src={c.photoURL}
+                      alt={c.name}
+                      className={`w-9 h-9 rounded-xl object-cover border border-white/60 dark:border-white/5 shadow-md select-none ${c.isOnline === false ? 'opacity-50 grayscale' : ''}`}
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 text-zinc-700 dark:text-zinc-200 border border-white/60 dark:border-white/5 flex items-center justify-center font-black text-xs font-mono shadow-inner shadow-black/5 select-none font-sans ${c.isOnline === false ? 'opacity-50 grayscale' : ''}`}>
+                      {c.avatarChar}
+                    </div>
+                  )}
+                  <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 ${c.isOnline !== false ? 'bg-emerald-500' : 'bg-zinc-400 dark:bg-zinc-600'} border-2 border-white dark:border-[#1a1c23] rounded-full shadow-sm`} title={c.isOnline !== false ? "Online" : "Offline"} />
                 </div>
 
                 {/* Informational stack */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1.5">
-                    <h4 className="font-bold text-[12px] text-black dark:text-white truncate leading-none drop-shadow-sm">
+                    <h4 className={`font-bold text-[12px] truncate leading-none drop-shadow-sm ${c.isOnline !== false ? 'text-black dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}>
                       {c.name}
                     </h4>
                     <div className="flex items-center gap-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded-md font-mono shrink-0 backdrop-blur-[2px]">
@@ -243,7 +379,7 @@ export default function StudyLounge({ user }: { user?: any }) {
                   </div>
 
                   <p className="text-[10px] text-zinc-600 dark:text-zinc-300 mt-1 truncate leading-tight font-medium opacity-90">
-                    {c.mode}
+                    {c.isOnline !== false ? c.mode : "Offline"}
                   </p>
                   
                   <div className="flex items-center justify-between gap-1 mt-1.5 border-t border-black/5 dark:border-white/10 pt-1.5 text-[9px] text-zinc-500 dark:text-zinc-400 font-medium leading-none">
@@ -255,8 +391,8 @@ export default function StudyLounge({ user }: { user?: any }) {
             ))
           ) : (
             <div className="p-5 bg-white/30 dark:bg-black/20 backdrop-blur-sm rounded-2xl border border-dashed border-white/60 dark:border-white/10 text-center font-sans space-y-2">
-              <div className="w-8 h-8 rounded-full bg-brand-indigo/10 flex items-center justify-center mx-auto mb-2">
-                <Wifi className="w-4 h-4 text-brand-indigo animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-2">
+                <Wifi className="w-4 h-4 text-black dark:text-white animate-pulse" />
               </div>
               <p className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200 leading-snug">
                 You're the master node here! ⚡
@@ -270,8 +406,8 @@ export default function StudyLounge({ user }: { user?: any }) {
       </div>
 
       {/* Group dynamic stats */}
-      <div className="relative z-10 bg-gradient-to-r from-brand-indigo/10 to-transparent dark:from-brand-indigo/20 rounded-xl p-2.5 border border-white/40 dark:border-brand-indigo/20 flex items-center justify-between text-[10px] font-sans backdrop-blur-md">
-        <span className="text-brand-indigo dark:text-brand-indigo-light font-bold flex items-center gap-1.5 shrink-0 drop-shadow-sm">
+      <div className="relative z-10 bg-zinc-50 dark:bg-zinc-900 rounded-xl p-2.5 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-[10px] font-sans backdrop-blur-md">
+        <span className="text-zinc-900 dark:text-zinc-100 font-bold flex items-center gap-1.5 shrink-0 drop-shadow-sm">
           <GraduationCap className="w-3.5 h-3.5" /> Study Spark Active
         </span>
         <span className="text-zinc-600 dark:text-zinc-300 truncate ml-2 font-medium">

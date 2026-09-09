@@ -187,16 +187,25 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
       <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-zinc-900 flex items-center justify-between shrink-0 relative z-20">
         <div className="flex items-center gap-3">
           <div className="relative">
-             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-indigo to-violet-500 text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white dark:ring-[#1a1c23]">
-                {companion.avatarChar}
-             </div>
+             {companion.photoURL ? (
+                <img
+                  src={companion.photoURL}
+                  alt={companion.name}
+                  className="w-9 h-9 rounded-full object-cover ring-2 ring-white dark:ring-[#1a1c23]"
+                  referrerPolicy="no-referrer"
+                />
+             ) : (
+                <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white dark:ring-[#1a1c23]">
+                   {companion.avatarChar}
+                </div>
+             )}
              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#1a1c23] rounded-full z-10" />
           </div>
           <div className="flex flex-col">
             <span className="font-extrabold text-sm text-zinc-900 dark:text-white truncate max-w-[160px] drop-shadow-sm">
               {companion.name}
             </span>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Active Now</span>
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium font-sans">Study Companion</span>
           </div>
         </div>
         <button 
@@ -212,7 +221,7 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scroller-hidden bg-zinc-50/50 dark:bg-black/20">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center opacity-50 space-y-2">
-            <MessageSquare className="w-8 h-8 text-brand-indigo" />
+            <MessageSquare className="w-8 h-8 text-black dark:text-white" />
             <p className="text-xs font-medium text-black dark:text-white">Say hi to {companion.name}!</p>
           </div>
         ) : (
@@ -236,7 +245,7 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
                       <div 
                         className={`px-3 py-1.5 rounded-2xl text-[11px] opacity-75 backdrop-blur-md border whitespace-pre-wrap translate-y-1.5 pb-2.5 z-0 relative ${
                           isMe 
-                            ? "bg-brand-indigo/60 text-white border-brand-indigo/30 rounded-b-sm" 
+                            ? "bg-zinc-700/60 dark:bg-zinc-300/40 text-white dark:text-black border-zinc-600/30 rounded-b-sm" 
                             : "bg-black/10 dark:bg-white/10 text-black dark:text-white border-transparent rounded-b-sm"
                         }`}
                       >
@@ -247,7 +256,7 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
                     <div 
                       className={`px-3 py-2 rounded-2xl text-xs shadow-sm backdrop-blur-md border whitespace-pre-wrap z-10 relative ${
                         isMe 
-                          ? `bg-brand-indigo/90 text-white border-brand-indigo/50 ${isReply ? "rounded-tr-sm" : ""} rounded-br-sm` 
+                          ? `bg-black dark:bg-white text-white dark:text-black border-black dark:border-white ${isReply ? "rounded-tr-sm" : ""} rounded-br-sm` 
                           : `bg-white/80 dark:bg-zinc-800/80 text-black dark:text-white border-white/50 dark:border-white/10 ${isReply ? "rounded-tl-sm" : ""} rounded-bl-sm`
                       }`}
                     >
@@ -287,10 +296,10 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
         {replyingTo && (
           <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200/50 dark:border-zinc-700/50 transition-all animate-in slide-in-from-bottom-2">
             <div className="flex items-start flex-col overflow-hidden max-w-[85%]">
-               <span className="text-[10px] font-bold text-brand-indigo flex items-center gap-1.5 mb-0.5">
+               <span className="text-[10px] font-bold text-black dark:text-white flex items-center gap-1.5 mb-0.5">
                  <Reply className="w-3 h-3.5" /> Replying to {replyingTo.fromName}
                </span>
-               <span className="text-[11px] text-zinc-600 dark:text-zinc-400 truncate w-full pl-4 border-l-[3px] border-brand-indigo/30">
+               <span className="text-[11px] text-zinc-600 dark:text-zinc-400 truncate w-full pl-4 border-l-[3px] border-zinc-300 dark:border-zinc-700">
                  {getOriginalMessageText(replyingTo.message)}
                </span>
             </div>
@@ -309,12 +318,12 @@ export default function StudentMessenger({ companion, onClose }: StudentMessenge
             value={inputValue}
             onChange={handleInputChange}
             placeholder="Write a message..."
-            className="flex-1 bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-zinc-900 dark:text-white placeholder:text-zinc-500 transition-all font-medium shadow-inner"
+            className="flex-1 bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white focus:ring-1 focus:ring-black dark:focus:ring-white text-zinc-900 dark:text-white placeholder:text-zinc-500 transition-all font-medium shadow-inner"
           />
           <button 
             type="submit" 
             disabled={!inputValue.trim()}
-            className="w-9 h-9 rounded-full bg-brand-indigo text-white flex items-center justify-center disabled:opacity-50 transition-opacity flex-shrink-0 shadow-md"
+            className="w-9 h-9 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center disabled:opacity-50 transition-opacity flex-shrink-0 shadow-md"
           >
             <Send className="w-4 h-4 ml-0.5" />
           </button>

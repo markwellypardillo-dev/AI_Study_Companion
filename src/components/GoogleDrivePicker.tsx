@@ -42,6 +42,9 @@ export default function GoogleDrivePicker({ onFileSelected, onClose }: GoogleDri
       if (err.code === 'auth/popup-closed-by-user') {
         setError(''); // Silently ignore popup closed
         return;
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Sign-in popup was blocked by your browser. Please allow pop-ups for this site and try again.');
+        return;
       }
       console.error('Login failed:', err);
       setError('Failed to sign in to Google Drive.');
@@ -109,7 +112,7 @@ export default function GoogleDrivePicker({ onFileSelected, onClose }: GoogleDri
       <div className="bg-ios-light-bg dark:bg-ios-dark-bg border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 w-full max-w-md shadow-xl flex flex-col max-h-[80vh]">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold flex items-center gap-2 dark:text-white">
-            <HardDrive className="w-5 h-5 text-brand-indigo" />
+            <HardDrive className="w-5 h-5 text-zinc-950 dark:text-zinc-50" />
             Google Drive
           </h3>
           <button onClick={onClose} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition">
@@ -145,7 +148,7 @@ export default function GoogleDrivePicker({ onFileSelected, onClose }: GoogleDri
             <div className="flex-1 overflow-y-auto pr-1 space-y-2">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-10 text-zinc-500">
-                  <Loader2 className="w-8 h-8 animate-spin mb-3 text-brand-indigo" />
+                  <Loader2 className="w-8 h-8 animate-spin mb-3 text-zinc-950 dark:text-zinc-50" />
                   <p className="text-sm">Loading files...</p>
                 </div>
               ) : files.length === 0 ? (
@@ -160,7 +163,7 @@ export default function GoogleDrivePicker({ onFileSelected, onClose }: GoogleDri
                     disabled={downloadingId !== null}
                     className="w-full text-left p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 flex items-center gap-3 group"
                   >
-                    <div className="p-2 bg-brand-indigo/10 text-brand-indigo rounded-lg group-hover:bg-brand-indigo group-hover:text-white transition-colors">
+                    <div className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 rounded-lg group-hover:bg-black dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-black transition-colors">
                       <FileText className="w-5 h-5" />
                     </div>
                     <div className="flex-1 overflow-hidden">
@@ -168,7 +171,7 @@ export default function GoogleDrivePicker({ onFileSelected, onClose }: GoogleDri
                       <p className="text-[10px] text-zinc-500">Google Drive Document</p>
                     </div>
                     {downloadingId === file.id && (
-                      <Loader2 className="w-4 h-4 animate-spin text-brand-indigo" />
+                      <Loader2 className="w-4 h-4 animate-spin text-zinc-950 dark:text-zinc-50" />
                     )}
                   </button>
                 ))

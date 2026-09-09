@@ -19,6 +19,7 @@ import { NotificationInfo } from "../App";
 import { AppMode, UserProgress, Track } from "../types";
 
 interface DynamicIslandProps {
+  sidebarCollapsed?: boolean;
   timerIsRunning: boolean;
   timeLeft: number;
   timerMode: "focus" | "break";
@@ -41,6 +42,7 @@ interface DynamicIslandProps {
 }
 
 export default function DynamicIsland({
+  sidebarCollapsed = false,
   timerIsRunning,
   timeLeft,
   timerMode,
@@ -142,7 +144,7 @@ export default function DynamicIsland({
               isAchievement
                 ? "bg-amber-500/15 text-amber-550 dark:text-amber-400"
                 : isLevelUp
-                ? "bg-brand-indigo/20 text-brand-indigo"
+                ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
                 : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
             }`}>
               {isAchievement ? "🏆" : isLevelUp ? "👑" : "⏱️"}
@@ -152,7 +154,7 @@ export default function DynamicIsland({
               <div className="flex items-center gap-1.5 justify-between">
                 {activeNotification.badge && (
                   <span className={`text-[9px] font-black uppercase tracking-widest block font-sans ${
-                    isAchievement ? "text-amber-500" : isLevelUp ? "text-brand-indigo" : "text-zinc-400"
+                    isAchievement ? "text-amber-500" : isLevelUp ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400"
                   }`}>
                     {activeNotification.badge}
                   </span>
@@ -212,7 +214,7 @@ export default function DynamicIsland({
                   e.stopPropagation();
                   setIsConfiguringPosition(false);
                 }}
-                className="text-[10px] uppercase font-bold tracking-wider text-brand-indigo flex items-center gap-1 hover:text-brand-indigo/80 transition-colors cursor-pointer bg-transparent border-none"
+                className="text-[10px] uppercase font-bold tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-1 hover:opacity-80 transition-colors cursor-pointer bg-transparent border-none"
               >
                 <ArrowLeft className="w-3 h-3" /> Back
               </button>
@@ -241,7 +243,7 @@ export default function DynamicIsland({
                   }}
                   className={`py-1 rounded-md text-[10px] font-bold flex flex-col items-center justify-center transition-all cursor-pointer border-none ${
                     preferredPosition === pos.id
-                      ? "bg-brand-indigo text-white shadow-md ring-1 ring-white/10"
+                      ? "bg-black dark:bg-white text-white dark:text-black shadow-md ring-1 ring-white/10"
                       : "bg-zinc-200/50 dark:bg-zinc-900 hover:bg-zinc-300/60 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white"
                   }`}
                 >
@@ -324,17 +326,17 @@ export default function DynamicIsland({
               </button>
               <button
                 onClick={handleToggleTimer}
-                className={`p-2 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-1 text-white shadow-md transition-all cursor-pointer border-none ${
-                  timerIsRunning ? "bg-zinc-400 dark:bg-zinc-755 hover:bg-zinc-500 dark:hover:bg-zinc-700" : "bg-brand-indigo hover:opacity-90"
+                className={`p-2 px-3.5 rounded-xl text-xs font-extrabold flex items-center gap-1 text-white dark:text-black shadow-md transition-all cursor-pointer border-none ${
+                  timerIsRunning ? "bg-zinc-400 dark:bg-zinc-755 hover:bg-zinc-500 dark:hover:bg-zinc-700" : "bg-black dark:bg-white hover:opacity-90"
                 }`}
               >
                 {timerIsRunning ? (
                   <>
-                    <Pause className="w-3 h-3 fill-white" /> Pause
+                    <Pause className="w-3 h-3 fill-white dark:fill-black" /> Pause
                   </>
                 ) : (
                   <>
-                    <Play className="w-3 h-3 fill-white" /> Resume
+                    <Play className="w-3 h-3 fill-white dark:fill-black" /> Resume
                   </>
                 )}
               </button>
@@ -346,13 +348,13 @@ export default function DynamicIsland({
             <div className="border-t border-zinc-200 dark:border-zinc-800/80 pt-2 mb-1.5 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-500 flex items-center gap-1 font-sans">
-                  <Music className="w-2.5 h-2.5 text-brand-indigo" /> Focus Soundtrack (Remote)
+                  <Music className="w-2.5 h-2.5 text-zinc-900 dark:text-zinc-100" /> Focus Soundtrack (Remote)
                 </span>
                 {musicIsPlaying && (
                   <span className="flex items-center gap-0.5 h-2 shrink-0">
-                    <span className="w-0.5 h-1.5 bg-brand-indigo rounded-full animate-pulse" />
-                    <span className="w-0.5 h-2.5 bg-brand-indigo rounded-full animate-pulse [animation-delay:0.1s]" />
-                    <span className="w-0.5 h-2 bg-brand-indigo rounded-full animate-pulse [animation-delay:0.2s]" />
+                    <span className="w-0.5 h-1.5 bg-black dark:bg-white rounded-full animate-pulse" />
+                    <span className="w-0.5 h-2.5 bg-black dark:bg-white rounded-full animate-pulse [animation-delay:0.1s]" />
+                    <span className="w-0.5 h-2 bg-black dark:bg-white rounded-full animate-pulse [animation-delay:0.2s]" />
                   </span>
                 )}
               </div>
@@ -378,7 +380,7 @@ export default function DynamicIsland({
                     {musicIsMuted || musicVolume === 0 ? (
                       <VolumeX className="w-3 h-3 text-red-500" />
                     ) : (
-                      <Volume2 className="w-3 h-3 text-brand-indigo" />
+                      <Volume2 className="w-3 h-3 text-zinc-900 dark:text-zinc-100" />
                     )}
                   </button>
 
@@ -387,8 +389,8 @@ export default function DynamicIsland({
                       e.stopPropagation();
                       onTogglePlayMusic();
                     }}
-                    className={`p-1 px-2.5 rounded-lg text-[9px] font-extrabold flex items-center gap-1 text-white shadow-sm transition-all cursor-pointer border-none ${
-                      musicIsPlaying ? "bg-amber-500 hover:bg-amber-600" : "bg-brand-indigo hover:opacity-90"
+                    className={`p-1 px-2.5 rounded-lg text-[9px] font-extrabold flex items-center gap-1 text-white dark:text-black shadow-sm transition-all cursor-pointer border-none ${
+                      musicIsPlaying ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-black dark:bg-white hover:opacity-90"
                     }`}
                   >
                     {musicIsPlaying ? "Pause" : "Play"}
@@ -410,7 +412,7 @@ export default function DynamicIsland({
                     onSetMusicVolume(parseFloat(e.target.value));
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full accent-brand-indigo h-0.5 rounded-full cursor-pointer bg-zinc-200 dark:bg-zinc-800"
+                  className="w-full accent-black dark:accent-white h-0.5 rounded-full cursor-pointer bg-zinc-200 dark:bg-zinc-800"
                   title="Adjust Music Volume"
                 />
               </div>
@@ -422,7 +424,7 @@ export default function DynamicIsland({
             <span className="text-zinc-500 dark:text-zinc-500 font-semibold font-sans">Session Focus Interval (25 Mins)</span>
             <button
               onClick={handleModeNavigate}
-              className="font-black text-brand-indigo hover:underline select-none cursor-pointer bg-transparent border-none"
+              className="font-black text-black dark:text-white hover:underline select-none cursor-pointer bg-transparent border-none"
             >
               Control Desk →
             </button>
@@ -469,8 +471,8 @@ export default function DynamicIsland({
           {musicIsPlaying ? (
             <div className="flex items-center gap-1.5 overflow-hidden flex-1 min-w-0 justify-end">
               <span className="flex items-center gap-0.5 h-1.5 shrink-0 select-none">
-                <span className="w-0.5 h-1 bg-brand-indigo rounded-full animate-pulse" />
-                <span className="w-0.5 text-brand-indigo h-1.5 bg-brand-indigo rounded-full animate-pulse [animation-delay:0.1s]" />
+                <span className="w-0.5 h-1 bg-black dark:bg-white rounded-full animate-pulse" />
+                <span className="w-0.5 text-zinc-900 dark:text-zinc-100 h-1.5 bg-black dark:bg-white rounded-full animate-pulse [animation-delay:0.1s]" />
               </span>
               <span className="text-[8px] font-black text-zinc-800 dark:text-zinc-100 truncate uppercase tracking-tight max-w-[55px] font-sans">
                 {selectedTrack?.name || "Playing"}
@@ -523,21 +525,63 @@ export default function DynamicIsland({
         animate={{ opacity: 1 }}
         className="w-full h-full flex items-center justify-between px-1 text-zinc-650 dark:text-zinc-400 text-[10px] font-black uppercase tracking-wider select-none font-sans"
       >
-        <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500">
-          <Flame className="w-3.5 h-3.5 fill-amber-600 dark:fill-amber-500 animate-pulse" />
-          {progress.dailyStreak}D Streak
-        </span>
-        <span className="text-zinc-500 dark:text-zinc-500 font-mono text-[9px] tracking-widest">
-          LVL {progress.level}
-        </span>
+        {internalHover ? (
+          <div className="flex items-center justify-between w-full px-1">
+            {/* Quick Play/Pause Timer */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setTimerIsRunning(!timerIsRunning);
+              }}
+              className="p-1 rounded-full hover:bg-zinc-150 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer border-none bg-transparent"
+              title={timerIsRunning ? "Pause Focus Session" : "Start Focus Session"}
+            >
+              {timerIsRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            </button>
+            
+            {/* Quick Play/Pause Ambient Music */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePlayMusic();
+              }}
+              className="p-1 rounded-full hover:bg-zinc-150 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+              title={musicIsPlaying ? "Pause Soundscape" : "Play Ambient Soundscape"}
+            >
+              <Music className={`w-3.5 h-3.5 ${musicIsPlaying ? "text-zinc-900 dark:text-zinc-100 animate-pulse" : ""}`} />
+            </button>
+
+            {/* Quick Navigation to Dashboard */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveMode("dashboard");
+              }}
+              className="p-1 rounded-full hover:bg-zinc-150 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-amber-500 transition-colors cursor-pointer border-none bg-transparent"
+              title="Go to Dashboard"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500">
+              <Flame className="w-3.5 h-3.5 fill-amber-600 dark:fill-amber-500 animate-pulse" />
+              {progress.dailyStreak}D Streak
+            </span>
+            <span className="text-zinc-500 dark:text-zinc-500 font-mono text-[9px] tracking-widest">
+              LVL {progress.level}
+            </span>
+          </>
+        )}
       </motion.div>
     );
   };
 
   // Compute size dynamically for the Dynamic Island container with live activities morphing rates
-  let widthClasses = "w-[124px] h-[28px]"; // Idle default
+  let widthClasses = "w-auto min-w-[124px] h-[28px] px-3 gap-2"; // Idle default
   if (activeNotification) {
-    widthClasses = "w-[340px] sm:w-[380px] h-auto min-h-[96px] p-3.5 sm:p-4";
+    widthClasses = "w-[calc(100vw-32px)] max-w-[340px] sm:max-w-[380px] h-auto min-h-[96px] p-3.5 sm:p-4";
   } else if (isExpanded) {
     // Make taller for integrated remote soundscape options when outside dashboard
     const height = isConfiguringPosition
@@ -545,23 +589,26 @@ export default function DynamicIsland({
       : activeMode !== "dashboard"
       ? "h-[228px]"
       : "h-[134px]";
-    widthClasses = `w-[310px] sm:w-[335px] ${height} p-3.5`;
+    widthClasses = `w-[calc(100vw-32px)] max-w-[310px] sm:max-w-[335px] ${height} p-3.5`;
   } else if (activeMode !== "dashboard" && (timerIsRunning || musicIsPlaying)) {
     // Elegant split dashboard live activity width
     widthClasses = "w-[165px] h-[34px] px-2.5";
   } else if (timerIsRunning) {
     widthClasses = "w-[145px] h-[32px] px-3";
   } else if (internalHover) {
-    widthClasses = "w-[155px] h-[30px] px-2.5 cursor-pointer";
+    widthClasses = "w-[170px] h-[34px] px-2.5 cursor-pointer";
   }
 
+  const sidebarOffset = sidebarCollapsed ? 32 : 144; // 144 is half of 288, 32 is half of 64
+  const sidebarLeftOffset = sidebarCollapsed ? 64 : 288; // Full width of sidebar
+
   const POSITION_CLASSES = {
-    "top-center": "top-[62px] sm:top-[84px] lg:top-[84px] left-1/2 -translate-x-1/2",
-    "top-left": "top-[62px] sm:top-[84px] lg:top-[84px] left-3 sm:left-6",
-    "top-right": "top-[62px] sm:top-[84px] lg:top-[84px] right-3 sm:right-6",
-    "bottom-center": "bottom-3 left-1/2 -translate-x-1/2",
-    "bottom-left": "bottom-3 left-3 sm:left-6",
-    "bottom-right": "bottom-3 right-3 sm:right-6"
+    "top-center": "top-[62px] sm:top-[84px] lg:top-[84px] left-0 right-0 lg:left-[calc(50%_+_var(--sidebar-offset))] lg:right-auto lg:-translate-x-1/2 mx-auto lg:mx-0 w-fit",
+    "top-left": "top-[62px] sm:top-[84px] left-0 right-0 mx-auto w-fit lg:left-[calc(24px_+_var(--sidebar-left-offset))] lg:right-auto lg:mx-0",
+    "top-right": "top-[62px] sm:top-[84px] left-0 right-0 mx-auto w-fit lg:right-6 lg:left-auto lg:mx-0",
+    "bottom-center": "bottom-3 left-0 right-0 mx-auto w-fit lg:left-[calc(50%_+_var(--sidebar-offset))] lg:right-auto lg:-translate-x-1/2 lg:mx-0",
+    "bottom-left": "bottom-3 left-0 right-0 mx-auto w-fit lg:left-[calc(24px_+_var(--sidebar-left-offset))] lg:right-auto lg:mx-0",
+    "bottom-right": "bottom-3 left-0 right-0 mx-auto w-fit lg:right-6 lg:left-auto lg:mx-0"
   };
 
   const currentPosClass = POSITION_CLASSES[preferredPosition] || POSITION_CLASSES["top-center"];
@@ -569,7 +616,11 @@ export default function DynamicIsland({
   return (
     <div
       id="dynamic-island-anchor"
-      className={`fixed ${currentPosClass} z-[100] flex flex-col items-center pointer-events-none select-none transition-all duration-300`}
+      style={{
+        "--sidebar-offset": `${sidebarOffset}px`,
+        "--sidebar-left-offset": `${sidebarLeftOffset}px`,
+      } as React.CSSProperties}
+      className={`fixed ${currentPosClass} z-[100] flex flex-col items-center pointer-events-none select-none transition-all duration-300 ease-in-out`}
     >
       <motion.div
         layoutId="dynamic-island-capsule"
@@ -591,8 +642,8 @@ export default function DynamicIsland({
       >
         {/* Animated Liquid Glass Background Effects */}
         <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none select-none">
-          {/* Purple/Indigo glowing fluid liquid gradient orb */}
-          <div className="absolute -top-[40px] -left-[30px] w-[130px] h-[130px] bg-brand-indigo/25 rounded-full blur-[20px] opacity-70 animate-pulse duration-5000" />
+          {/* Glowing fluid liquid gradient orb */}
+          <div className="absolute -top-[40px] -left-[30px] w-[130px] h-[130px] bg-zinc-300/20 dark:bg-zinc-700/20 rounded-full blur-[20px] opacity-70 animate-pulse duration-5000" />
           {/* Fuchsia liquid gradient orb */}
           <div className="absolute -bottom-[50px] -right-[20px] w-[110px] h-[110px] bg-fuchsia-500/15 rounded-full blur-[20px] opacity-65 animate-[pulse_6s_infinite_alternate]" />
           {/* Dynamic timer state (Red for Focus, Emerald for Break) */}

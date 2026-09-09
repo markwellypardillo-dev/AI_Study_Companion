@@ -7,7 +7,7 @@
   
   --font-size-xxs: 0.65rem;
   
-  --color-brand-indigo: #5A4BFF;
+  --color-brand-indigo: #18181b;
   --color-ios-light-bg: #FFFFFF;
   --color-ios-light-secondary: #F2F2F7;
   --color-ios-dark-bg: #000000;
@@ -48,3 +48,28 @@ input:-webkit-autofill:active{
     transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
     -webkit-text-fill-color: #fff !important;
 }
+
+/* Smooth transitions for theme toggling */
+html,
+body,
+div,
+header,
+main,
+aside,
+button,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+input,
+label,
+textarea {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
+}
+

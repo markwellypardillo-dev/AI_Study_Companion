@@ -1,7 +1,7 @@
 export interface Track {
   id: string;
   name: string;
-  type: "synth" | "stream";
+  type: "synth" | "stream" | "youtube";
   src?: string;
   description: string;
 }
@@ -32,12 +32,32 @@ export interface FlashcardItem {
   back: string;
 }
 
+export interface FeynmanConcept {
+  concept: string;
+  analogy: string;
+  explanation: string;
+}
+
+export interface MnemonicDevice {
+  concept: string;
+  mnemonic: string;
+  explanation: string;
+}
+
+export interface DiscussionPrompt {
+  question: string;
+  guidance: string;
+}
+
 export interface StudyGuideData {
   summary: string;
   sections: StudySection[];
   keyConcepts: KeyConcept[];
   vocabulary: VocabWord[];
   flashcards: FlashcardItem[];
+  feynman?: FeynmanConcept;
+  mnemonics?: MnemonicDevice[];
+  discussionPrompts?: DiscussionPrompt[];
 }
 
 export interface AssessmentQuestion {
@@ -70,5 +90,6 @@ export interface UserProgress {
   quizHistory: QuizHistory[];
   masteredTermsCount: number;
   completedStudiesCount: number;
+  photoURL?: string;
   unlockedAchievements?: string[];
 }

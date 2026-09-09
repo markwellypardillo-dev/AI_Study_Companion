@@ -1,4 +1,4 @@
-import { useState, useRef, DragEvent, ChangeEvent, useEffect } from "react";
+import { useState, useRef, DragEvent, ChangeEvent, useEffect, useMemo } from "react";
 import { UploadCloud, FileText, CheckCircle2, AlertTriangle, Play, Sparkles, ChevronDown, HardDrive } from "lucide-react";
 import { OfficeParser } from "officeparser";
 import { PRELOADED_SUBJECTS } from "../data/preloadedSubjects";
@@ -7,11 +7,13 @@ import GoogleDrivePicker from "./GoogleDrivePicker";
 interface UploadViewProps {
   onFileLoaded: (fileName: string, fileContent: string) => void;
   isLoading: boolean;
+  user?: any;
 }
 
-export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps) {
+export default function UploadView({ onFileLoaded, isLoading, user }: UploadViewProps) {
   const [dragActive, setDragActive] = useState<boolean>(false);
-  const [progressState, setProgressState] = useState<number>(-1); // -1 = idle
+  const [progressState, setProgressState] = useState<number>(-1);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // -1 = idle
   const [parsingStep, setParsingStep] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
   const [fileContent, setFileContent] = useState<string>("");
@@ -58,6 +60,7 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
 
   const executeParsingSimulation = (name: string, content: string) => {
     isCancelledRef.current = false;
+    setErrorMessage(null);
     setFileName(name);
     setFileContent(content);
     setProgressState(0);
@@ -108,7 +111,7 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
     const allowed = ["pdf", "docx", "pptx", "txt", "xlsx", "png", "jpg", "jpeg", "webp"];
 
     if (!extension || !allowed.includes(extension)) {
-      alert("Invalid format! Accepted document formats are: .pdf, .docx, .pptx, .txt, .xlsx, .png, .jpg, .jpeg, .webp");
+      setErrorMessage("Invalid format! Accepted document formats are: .pdf, .docx, .pptx, .txt, .xlsx, .png, .jpg, .jpeg, .webp");
       return;
     }
 
@@ -214,13 +217,13 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
 
       } catch (err: any) {
         console.error("File processing failure:", err);
-        alert(`Extraction failure: ${err.message || "Unable to extract text. Please ensure the document is not corrupted or too large."}`);
+        setErrorMessage(`Extraction failure: ${err.message || "Unable to extract text. Please ensure the document is not corrupted or too large."}`);
         setProgressState(-1);
       }
     };
 
     reader.onerror = () => {
-      alert("Error reading file stream.");
+      setErrorMessage("Error reading file stream.");
       setProgressState(-1);
     };
 
@@ -236,68 +239,103 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
 
   const visibleSamples = showAllSamples ? PRELOADED_SUBJECTS : PRELOADED_SUBJECTS.slice(0, 3);
 
+  const firstName = user?.displayName ? user.displayName.split(' ')[0] : "Student";
+
+  const greetingText = useMemo(() => {
+    const greetings = [
+      `What do you want to study, ${firstName}?`,
+      `What are we mastering today, ${firstName}?`,
+      `Let's explore something new, ${firstName}!`,
+      `Ready for a productive session, ${firstName}?`,
+      `What's on your mind to learn today, ${firstName}?`,
+      `Time to sharpen your mind, ${firstName}.`,
+      `What topic are we conquering today, ${firstName}?`,
+      `Knowledge awaits! What shall we learn, ${firstName}?`,
+      `A fresh start! What do you want to study, ${firstName}?`,
+      `Let's unlock some new knowledge, ${firstName}!`,
+      `What's our focus for today, ${firstName}?`,
+      `Ready to level up your brain power, ${firstName}?`
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  }, [firstName]);
+
   return (
-    <div id="upload-panel" className="max-w-3xl mx-auto py-8 px-4">
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-extrabold text-black dark:text-white mt-3 tracking-tight">
-          Supercharge Your Study Sessions
+    <div id="upload-panel" className="max-w-3xl mx-auto py-8 px-4 relative">
+      
+       {/* Subtle Gemini-like background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-500/10 via-transparent to-transparent blur-3xl pointer-events-none -z-10 hidden dark:block" />
+
+      <div className="text-center mb-10 relative z-10 pt-8">
+        <h1 className="text-3xl sm:text-[34px] font-normal text-black dark:text-[#E3E3E3] mt-3 tracking-normal font-sans">
+          {greetingText}
         </h1>
-        <p className="text-sm text-ios-secondary-text mt-2 max-w-lg mx-auto">
-          Drop any notes, syllabus slides, textbook PDFs, or spreadsheets or select one of our preloaded examples to generate study guides instantly.
-        </p>
       </div>
 
       {progressState === -1 ? (
         <>
-          {/* Drag & Drop Area */}
-          <div
-            id="drag-drop-zone"
-            onDragEnter={handleDrag}
-            onDragOver={handleDrag}
-            onDragLeave={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`cursor-pointer transition-all duration-300 rounded-3xl p-10 border-2 border-dashed text-center flex flex-col items-center justify-center p-12 ${
-              dragActive
-                ? "border-brand-indigo bg-brand-indigo/10 scale-98"
-                : "border-zinc-200 dark:border-zinc-800 hover:border-brand-indigo bg-ios-light-secondary dark:bg-ios-dark-secondary shadow-sm"
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleFileInput}
-              accept=".pdf,.docx,.pptx,.txt,.xlsx,.png,.jpg,.jpeg,.webp"
-              className="hidden"
-            />
-            <div className="p-4 bg-brand-indigo/10 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-              <UploadCloud className="w-8 h-8 text-brand-indigo" />
-            </div>
-            <h3 className="text-lg font-bold text-black dark:text-white">
-              Drag & Drop your materials
-            </h3>
-            <p className="text-xs text-ios-secondary-text mt-1">
-              Supports PDF, DOCX, PPTX, TXT, XLSX, PNG, JPG, WEBP (Up to 25MB)
-            </p>
-            <div className="flex items-center justify-center gap-3 mt-6">
-              <button
-                id="btn-trigger-file-select"
-                className="px-5 py-2.5 bg-brand-indigo text-white text-xs font-bold rounded-xl shadow-[0_4px_12px_rgba(90,75,255,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Browse files
-              </button>
-              
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // prevent triggering drag-drop zone file select
-                  setShowDrivePicker(true);
-                }}
-                className="px-5 py-2.5 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 text-xs font-bold rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
-              >
-                <HardDrive className="w-3.5 h-3.5" />
-                Google Drive
-              </button>
+          <div className="relative group">
+            {/* Ambient Brand-indigo-like background glows */}
+            <div className="absolute -inset-3 bg-gradient-to-r from-[#5A4BFF]/40 via-violet-500/30 to-[#5A4BFF]/40 rounded-[32px] opacity-25 dark:opacity-45 blur-2xl group-hover:opacity-35 dark:group-hover:opacity-60 transition-all duration-700 pointer-events-none" />
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#5A4BFF]/20 via-violet-500/15 to-[#5A4BFF]/20 rounded-[30px] opacity-15 dark:opacity-25 blur-md group-hover:opacity-25 dark:group-hover:opacity-40 transition-all duration-700 pointer-events-none" />
+
+            {errorMessage && (
+              <div className="absolute -top-16 left-0 right-0 z-20 flex justify-center animate-fade-in">
+                <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 px-4 py-3 rounded-2xl text-sm font-semibold flex items-center gap-2 shadow-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  {errorMessage}
+                </div>
+              </div>
+            )}
+            {/* Drag & Drop Area */}
+            <div
+              id="drag-drop-zone"
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`relative z-10 cursor-pointer transition-all duration-300 rounded-3xl p-10 border-0 text-center flex flex-col items-center justify-center p-12 ${
+                dragActive
+                  ? "bg-zinc-100/70 dark:bg-[#18181b]/70 scale-98 shadow-inner"
+                  : "bg-white/85 dark:bg-[#121215]/85 hover:bg-white/95 dark:hover:bg-[#121215]/95 hover:shadow-xl backdrop-blur-xl"
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileInput}
+                accept=".pdf,.docx,.pptx,.txt,.xlsx,.png,.jpg,.jpeg,.webp"
+                className="hidden"
+              />
+              <div className="p-4 bg-zinc-200/50 dark:bg-zinc-800/50 rounded-2xl mb-4 group-hover:scale-105 transition-transform">
+                <UploadCloud className="w-8 h-8 text-black dark:text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-black dark:text-white">
+                Drag & Drop your materials
+              </h3>
+              <p className="text-xs text-ios-secondary-text mt-1">
+                Supports PDF, DOCX, PPTX, TXT, XLSX, PNG, JPG, WEBP (Up to 25MB)
+              </p>
+              <div className="flex items-center justify-center gap-3 mt-6">
+                <button
+                  id="btn-trigger-file-select"
+                  className="px-5 py-2.5 bg-black dark:bg-white text-white dark:text-black text-xs font-bold rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Browse files
+                </button>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // prevent triggering drag-drop zone file select
+                    setShowDrivePicker(true);
+                  }}
+                  className="px-5 py-2.5 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white border-0 text-xs font-bold rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+                >
+                  <HardDrive className="w-3.5 h-3.5" />
+                  Google Drive
+                </button>
+              </div>
             </div>
           </div>
 
@@ -311,69 +349,17 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
             />
           )}
 
-          {/* Quick Preload Examples */}
-          <div className="mt-10">
-            <h4 className="text-xs font-bold text-ios-secondary-text uppercase tracking-widest mb-4 flex items-center gap-1.5">
-              <span>OR CHOOSE A PRELOADED SUBJECT FOR INSTANT TRIAL:</span>
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {visibleSamples.map((doc) => (
-                <div
-                  key={doc.id}
-                  id={`sample-doc-${doc.id}`}
-                  onClick={() => selectSample(doc.id)}
-                  className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 hover:border-brand-indigo p-5 rounded-2xl cursor-pointer hover:-translate-y-1 transition-all flex flex-col justify-between group shadow-sm active:scale-95"
-                >
-                  <div>
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <FileText className="w-4 h-4 text-brand-indigo" />
-                      <span className="text-xxs font-bold text-brand-indigo uppercase bg-brand-indigo/10 px-2 py-0.5 rounded-md">
-                        {doc.title.split(".").pop()?.toUpperCase()}
-                      </span>
-                    </div>
-                    <h5 className="text-sm font-extrabold text-black dark:text-white line-clamp-1 group-hover:text-brand-indigo">
-                      {doc.title.replace(/\.[^/.]+$/, "")}
-                    </h5>
-                    <p className="text-xs text-ios-secondary-text mt-1.5 line-clamp-2 leading-relaxed">
-                      {doc.short}
-                    </p>
-                  </div>
-                  <div className="mt-4 flex items-center gap-1 text-xs text-brand-indigo font-bold">
-                    <span>Try Subject</span>
-                    <Play className="w-3 h-3 fill-brand-indigo" />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {PRELOADED_SUBJECTS.length > 3 && (
-              <div className="mt-6 flex justify-center">
-                <button
-                  type="button"
-                  id="btn-toggle-show-all-samples"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowAllSamples(!showAllSamples);
-                  }}
-                  className="px-6 py-2.5 rounded-full border-2 border-brand-indigo bg-brand-indigo/5 text-brand-indigo hover:bg-brand-indigo/10 active:scale-95 transition-all text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <span>{showAllSamples ? "Show Less" : "Show More Subjects (Instant Trial)"}</span>
-                  <ChevronDown className={`w-4.5 h-4.5 transition-transform duration-305 ${showAllSamples ? "rotate-180" : ""}`} />
-                </button>
-              </div>
-            )}
-          </div>
         </>
       ) : (
         /* Visual Parsing Progress State Indicator */
         <div
           id="parsing-progress-box"
-          className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-md flex flex-col items-center justify-center min-h-60"
+          className="bg-ios-light-secondary dark:bg-[#121215] border-0 rounded-3xl p-8 shadow-md flex flex-col items-center justify-center min-h-60"
         >
           <div className="relative w-16 h-16 mb-6">
-            <span className="absolute inset-0 border-4 border-brand-indigo/15 rounded-full" />
-            <span className="absolute inset-0 border-4 border-brand-indigo rounded-full border-t-transparent animate-spin" />
-            <FileText className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-brand-indigo" />
+            <span className="absolute inset-0 border-4 border-zinc-200 dark:border-zinc-800 rounded-full" />
+            <span className="absolute inset-0 border-4 border-black dark:border-white rounded-full border-t-transparent animate-spin" />
+            <FileText className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-black dark:text-white" />
           </div>
 
           <h3 className="text-xl font-bold text-black dark:text-white">
@@ -382,13 +368,13 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
 
           <div className="w-full max-w-md mt-8">
             <div className="flex justify-between text-xs text-ios-secondary-text mb-2 font-medium">
-              <span className="animate-pulse text-brand-indigo font-bold">{parsingStep}</span>
+              <span className="animate-pulse text-black dark:text-white font-bold">{parsingStep}</span>
               <span>{Math.round((progressState / steps.length) * 100)}%</span>
             </div>
             {/* Visual double tier bar */}
-            <div className="w-full h-2.5 bg-zinc-200 dark:bg-zinc-900 rounded-full overflow-hidden border border-zinc-200/40 dark:border-zinc-850">
+            <div className="w-full h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden border-0">
               <div
-                className="h-full bg-brand-indigo transition-all duration-300 rounded-full shadow-[0_0_8px_rgba(90,75,255,0.4)]"
+                className="h-full bg-black dark:bg-white transition-all duration-300 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]"
                 style={{ width: `${(progressState / steps.length) * 100}%` }}
               />
             </div>
@@ -401,7 +387,7 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
                 {progressState > idx ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 ) : progressState === idx ? (
-                  <span className="w-4 h-4 rounded-full border-2 border-brand-indigo border-t-transparent animate-spin flex-shrink-0" />
+                  <span className="w-4 h-4 rounded-full border-2 border-black dark:border-white border-t-transparent animate-spin flex-shrink-0" />
                 ) : (
                   <span className="w-4 h-4 rounded-full border border-zinc-400 dark:border-zinc-600 flex-shrink-0" />
                 )}
@@ -410,7 +396,7 @@ export default function UploadView({ onFileLoaded, isLoading }: UploadViewProps)
                     progressState > idx
                       ? "text-ios-secondary-text/85 line-through font-normal"
                       : progressState === idx
-                      ? "text-brand-indigo font-bold"
+                      ? "text-black dark:text-white font-bold"
                       : "text-ios-secondary-text"
                   }`}
                 >

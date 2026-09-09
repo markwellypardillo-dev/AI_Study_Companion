@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Sparkles, User, ArrowRight, AlertTriangle } from 'lucide-react';
+import { Sparkles, User, ArrowRight } from 'lucide-react';
 import { googleSignIn, auth } from '../lib/firebase';
+import { logGlobalActivity } from '../lib/db';
 
 interface LoginViewProps {
   onLogin: (user: any) => void;
@@ -17,12 +18,14 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) =
     try {
       const result = await googleSignIn();
       if (result?.user) {
+        setTimeout(() => logGlobalActivity("login"), 1000);
         onLogin(result.user);
       }
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, silently ignore and don't show error
         setError(null);
+      } else if (err.code === 'auth/popup-blocked') {
+        setError("Sign-in popup was blocked by your browser. Please allow pop-ups for this site and try again.");
       } else if (err.code === 'auth/unauthorized-domain') {
         setError("This domain is not authorized for OAuth. You need to add this app's URL to the 'Authorized domains' list in your Firebase Console (Authentication > Settings > Authorized domains).");
       } else {
@@ -35,18 +38,18 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) =
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4" style={{ 
-        background: 'linear-gradient(135deg, #1b1b2f 0%, #162447 50%, #1f4068 100%)' 
+        background: 'linear-gradient(135deg, #09090b 0%, #18181b 50%, #27272a 100%)' 
     }}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-brand-indigo/30 rounded-full blur-[100px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[120px]" />
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-white/5 rounded-full blur-[100px]" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-zinc-800/10 rounded-full blur-[120px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="backdrop-blur-xl bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl">
+        <div className="backdrop-blur-xl bg-white/5 dark:bg-black/25 border border-white/10 dark:border-zinc-800/60 rounded-3xl p-6 sm:p-8 shadow-2xl">
           <div className="text-center mb-6 sm:mb-8">
-             <div className="inline-flex items-center justify-center p-2.5 sm:p-3 bg-brand-indigo/20 rounded-2xl mb-3 sm:mb-4 border border-brand-indigo/30 backdrop-blur-md">
-               <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-brand-indigo drop-shadow-[0_0_8px_rgba(90,75,255,0.8)]" />
+             <div className="inline-flex items-center justify-center p-2.5 sm:p-3 bg-white/10 dark:bg-zinc-800/20 rounded-2xl mb-3 sm:mb-4 border border-white/20 dark:border-zinc-800/30 backdrop-blur-md">
+               <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
              </div>
              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Welcome
@@ -67,7 +70,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) =
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full py-3 sm:py-4 bg-brand-indigo hover:bg-indigo-600 border border-brand-indigo/50 shadow-[0_0_20px_rgba(90,75,255,0.3)] text-white rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full py-3 sm:py-4 bg-white hover:bg-zinc-100 text-black border border-white/80 shadow-[0_4px_12px_rgba(255,255,255,0.05)] rounded-xl font-bold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
              >
                 {loading ? 'Processing...' : (
                   <>

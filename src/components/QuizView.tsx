@@ -178,9 +178,9 @@ export default function QuizView({
                 disabled={!isUnlocked}
                 className={`relative p-3.5 rounded-2xl flex flex-col items-center justify-center border-2 transition-all duration-305 cursor-pointer ${
                   isCurrent
-                    ? "border-brand-indigo bg-brand-indigo/10 shadow-md scale-102"
+                    ? "border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 shadow-md scale-102"
                     : isUnlocked
-                    ? "border-zinc-200 dark:border-zinc-800 bg-ios-light-secondary dark:bg-ios-dark-secondary hover:border-brand-indigo hover:opacity-90"
+                    ? "border-zinc-200 dark:border-zinc-800 bg-ios-light-secondary dark:bg-ios-dark-secondary hover:border-black dark:hover:border-white hover:opacity-90"
                     : "border-zinc-200/50 dark:border-zinc-900 bg-zinc-100 dark:bg-zinc-950 opacity-40 cursor-not-allowed"
                 }`}
               >
@@ -206,8 +206,8 @@ export default function QuizView({
       {loading ? (
         <div className="text-center py-20 bg-ios-light-secondary dark:bg-ios-dark-secondary rounded-3xl border border-zinc-205 dark:border-zinc-850 shadow-sm flex flex-col items-center">
           <div className="relative w-12 h-12 mb-4">
-            <span className="absolute inset-0 border-4 border-brand-indigo/20 rounded-full" />
-            <span className="absolute inset-0 border-4 border-brand-indigo rounded-full border-t-transparent animate-spin" />
+            <span className="absolute inset-0 border-4 border-zinc-100 dark:border-zinc-900 rounded-full" />
+            <span className="absolute inset-0 border-4 border-black dark:border-white rounded-full border-t-transparent animate-spin" />
           </div>
           <h4 className="text-base font-bold text-black dark:text-white mt-2 animate-pulse">
             AI is assembling questions...
@@ -219,7 +219,7 @@ export default function QuizView({
       ) : questions.length > 0 ? (
         <div className="space-y-6 animate-fade-in">
           {/* List of Questions */}
-          {questions.map((q, idx) => {
+          {(questions || []).map((q, idx) => {
             const hasChecked = !!checkedQuestions[q.id];
             const uAns = userAnswers[q.id] || "";
             const isCorrect = uAns.trim().toLowerCase() === (q.correctAnswer || "").trim().toLowerCase();
@@ -231,7 +231,7 @@ export default function QuizView({
                 className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-850 rounded-3xl p-6 shadow-sm transition-all hover:shadow-md"
               >
                 <div className="flex justify-between items-start mb-4 gap-2">
-                  <span className="text-xxs uppercase tracking-wider font-extrabold bg-brand-indigo/10 text-brand-indigo px-2.5 py-1 rounded-lg">
+                  <span className="text-xxs uppercase tracking-wider font-extrabold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-2.5 py-1 rounded-lg">
                     Question {idx + 1} • {q.type.toUpperCase()}
                   </span>
                 </div>
@@ -243,7 +243,7 @@ export default function QuizView({
                 {/* BASIC MCQ & TRUE / FALSE Options */}
                 {(q.type === "mcq" || q.type === "tf") && q.options && (
                   <div className="space-y-2">
-                    {q.options.map((opt, oIdx) => {
+                    {(q.options || []).map((opt, oIdx) => {
                       const isSelected = uAns === opt;
                       return (
                         <button
@@ -253,8 +253,8 @@ export default function QuizView({
                           disabled={quizFinished}
                           className={`w-full text-left p-3.5 text-xs font-semibold rounded-xl border-2 transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
-                              ? "border-brand-indigo bg-brand-indigo/10 text-brand-indigo"
-                              : "border-zinc-200 dark:border-zinc-800 hover:border-brand-indigo text-black dark:text-white"
+                              ? "border-black dark:border-white bg-zinc-150 dark:bg-zinc-800 text-black dark:text-white"
+                              : "border-zinc-200 dark:border-zinc-800 hover:border-black dark:hover:border-white text-black dark:text-white"
                           }`}
                         >
                           <span>{opt}</span>
@@ -280,14 +280,14 @@ export default function QuizView({
                       placeholder={q.type === "fib" ? "Type the missing word..." : "Type your direct explanation..."}
                       value={uAns}
                       onChange={(e) => setAnswerField(q.id, e.target.value)}
-                      className="w-full px-4 py-3 text-xs bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-brand-indigo text-black dark:text-white placeholder-zinc-400 transition-all font-semibold outline-none"
+                      className="w-full px-4 py-3 text-xs bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white text-black dark:text-white placeholder-zinc-400 transition-all font-semibold outline-none"
                     />
 
                     {quizFinished && (
-                      <div className="p-3.5 bg-brand-indigo/5 rounded-xl text-xs space-y-1.5 border border-zinc-200/50 dark:border-zinc-850">
+                      <div className="p-3.5 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-xs space-y-1.5 border border-zinc-200/50 dark:border-zinc-850">
                         <p className="font-extrabold text-black dark:text-white flex items-center gap-1">
                           <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                          Correct Answer: <span className="text-brand-indigo font-bold underline">{q.correctAnswer}</span>
+                          Correct Answer: <span className="text-zinc-900 dark:text-zinc-100 font-bold underline">{q.correctAnswer}</span>
                         </p>
                         <p className="text-ios-secondary-text font-medium">
                           Your answer: <span className="font-bold">{uAns || "(unanswered)"}</span>
@@ -307,12 +307,12 @@ export default function QuizView({
                       placeholder="Synthesize your comprehensive response based strictly on the source document guidelines..."
                       value={uAns}
                       onChange={(e) => setAnswerField(q.id, e.target.value)}
-                      className="w-full p-4 text-xs bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-brand-indigo text-black dark:text-white placeholder-zinc-400 leading-relaxed font-sans transition-all outline-none resize-none"
+                      className="w-full p-4 text-xs bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white text-black dark:text-white placeholder-zinc-400 leading-relaxed font-sans transition-all outline-none resize-none"
                     />
 
                     {quizFinished && (
-                      <div className="p-4 bg-brand-indigo/5 border border-zinc-200/50 dark:border-zinc-855 rounded-2xl text-xs space-y-3">
-                        <p className="font-black text-brand-indigo flex items-center gap-1 text-xs">
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-855 rounded-2xl text-xs space-y-3">
+                        <p className="font-black text-black dark:text-white flex items-center gap-1 text-xs">
                           <BookMarked className="w-4 h-4" /> Grading Guidelines and Ground Truth Metrics:
                         </p>
                         
@@ -322,8 +322,8 @@ export default function QuizView({
                         </div>
 
                         {q.gradingCriteria && (
-                          <div className="space-y-1 p-3 bg-brand-indigo/10 rounded-xl">
-                            <p className="font-bold text-brand-indigo">Required Grading Checklist points:</p>
+                          <div className="space-y-1 p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
+                            <p className="font-bold text-black dark:text-white">Required Grading Checklist points:</p>
                             <p className="text-ios-secondary-text leading-normal font-medium">{q.gradingCriteria}</p>
                           </div>
                         )}
@@ -346,7 +346,7 @@ export default function QuizView({
             <button
               id="btn-submit-assessment-answers"
               onClick={handleSubmitQuiz}
-              className="w-full py-4 bg-brand-indigo hover:opacity-95 text-white font-extrabold rounded-2xl hover:scale-101 active:scale-99 shadow-md transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-4 bg-black dark:bg-white hover:opacity-90 text-white dark:text-black font-extrabold rounded-2xl hover:scale-101 active:scale-99 shadow-md transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               <Award className="w-4.5 h-4.5" /> Complete Assessment and Calculate XP
             </button>
@@ -354,7 +354,7 @@ export default function QuizView({
             /* Quiz Score Summary Card */
             <div
               id="quiz-results-card"
-              className="bg-brand-indigo/15 border-2 border-brand-indigo/20 text-black dark:text-white rounded-3xl p-8 text-center flex flex-col items-center shadow-lg"
+              className="bg-zinc-100 dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 text-black dark:text-white rounded-3xl p-8 text-center flex flex-col items-center shadow-lg"
             >
               <Trophy className="w-16 h-16 text-amber-500 animate-bounce mb-3" />
               <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
@@ -364,9 +364,9 @@ export default function QuizView({
                 All metrics have been computed. Check your performance dashboard profile below.
               </p>
 
-              <div className="flex gap-8 my-6 bg-brand-indigo/10 px-6 py-4.5 rounded-2xl border border-brand-indigo/20">
+              <div className="flex gap-8 my-6 bg-zinc-50 dark:bg-zinc-950 px-6 py-4.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
                 <div>
-                  <span className="text-3xl font-black font-mono block text-brand-indigo">
+                  <span className="text-3xl font-black font-mono block text-zinc-900 dark:text-zinc-100">
                     {calculatedScore} / {questions.length}
                   </span>
                   <span className="text-xxs text-ios-secondary-text uppercase font-semibold">Grounded Score</span>
@@ -392,8 +392,8 @@ export default function QuizView({
 
               {/* Dynamic progressive prompt banner */}
               {showAdaptiveMessage && (
-                <div className="bg-brand-indigo/10 border border-brand-indigo/20 p-4 rounded-2xl max-w-md mx-auto mb-6">
-                  <p className="text-xs font-bold text-brand-indigo">{showAdaptiveMessage}</p>
+                <div className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 rounded-2xl max-w-md mx-auto mb-6">
+                  <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">{showAdaptiveMessage}</p>
                   
                   {(selectedDifficulty === "basic" || selectedDifficulty === "medium") && (
                     <button
@@ -410,7 +410,7 @@ export default function QuizView({
               <button
                 id="btn-retry-assessment-quiz"
                 onClick={() => fetchQuestions(selectedDifficulty)}
-                className="px-6 py-3 bg-brand-indigo text-white text-xs font-black rounded-xl hover:opacity-90 shadow-sm active:scale-95 transition-all flex items-center gap-1.5 mx-auto cursor-pointer"
+                className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black text-xs font-black rounded-xl hover:opacity-90 shadow-sm active:scale-95 transition-all flex items-center gap-1.5 mx-auto cursor-pointer"
               >
                 <RefreshCw className="w-4 h-4" /> Run Alternate Assessment
               </button>
@@ -425,7 +425,7 @@ export default function QuizView({
           <button
             id="btn-fallback-retry"
             onClick={() => fetchQuestions(selectedDifficulty)}
-            className="mt-4 px-4 py-2 bg-brand-indigo text-white text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer"
+            className="mt-4 px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer"
           >
             Retry Generation
           </button>

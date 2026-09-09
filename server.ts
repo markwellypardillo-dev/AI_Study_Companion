@@ -26,7 +26,7 @@ async function generateContentWithRetryAndFallback(params: {
   contents: string;
   config?: any;
 }): Promise<any> {
-  const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite", "gemini-3.1-pro-preview"];
+  const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3.5-flash", "gemini-3.1-pro-preview"];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -106,7 +106,7 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
     const prompt = "Please transcribe all text from this image accurately. If there are diagrams, charts, or visual information, write a detailed description of them. Structure the transcription logically.";
     
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-2.5-flash",
       contents: [
         {
           role: "user",
@@ -132,7 +132,7 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
     const prompt = "You are analyzing a PDF document. Some PDFs contain only images (like scanned slides or photos). DO NOT just read the metadata or alt-text (e.g. 'image10.jpg'). You MUST visually inspect the actual pages and images within the PDF. Transcribe any text you see inside the images, and describe any charts, diagrams, or visual content in high detail.";
     
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-2.5-flash",
       contents: [
         {
           role: "user",
@@ -174,13 +174,16 @@ interface ScholarPresence {
   avatarChar: string;
   lastSeen: number;
   socketId?: string;
+  photoURL?: string;
+  isOnline: boolean;
+  deviceId?: string;
 }
 
 const activePresenceMap = new Map<string, ScholarPresence>();
 
 app.post("/api/study-lounge/presence", (req, res) => {
   try {
-    const { id, name, subject, mode, streak, level, avatarChar } = req.body;
+    const { id, name, subject, mode, streak, level, avatarChar, photoURL, deviceId } = req.body;
     if (!id || !name) {
       return res.status(400).json({ error: "id and name are required" });
     }
@@ -194,22 +197,35 @@ app.post("/api/study-lounge/presence", (req, res) => {
       streak: Number(streak) || 1,
       level: Number(level) || 1,
       avatarChar: avatarChar || name[0] || "S",
-      lastSeen: Date.now()
+      lastSeen: Date.now(),
+      photoURL: photoURL || "",
+      isOnline: true,
+      deviceId
     });
 
-    // Clean stale presences (such as closed browsers or disconnected users inactive for > 15 seconds)
-    const cutoff = Date.now() - 15000;
+    // Clean stale presences (such as closed browsers or disconnected users inactive for > 24 hours)
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
     for (const [key, val] of activePresenceMap.entries()) {
       if (val.lastSeen < cutoff) {
         activePresenceMap.delete(key);
+      } else if (val.lastSeen < Date.now() - 30000 && val.isOnline) {
+        val.isOnline = false;
+      }
+      
+      if (key !== id) {
+        if (deviceId && val.deviceId === deviceId) {
+          activePresenceMap.delete(key);
+        } else if (val.name === name && val.photoURL === photoURL && !val.isOnline) {
+          activePresenceMap.delete(key);
+        }
       }
     }
 
     // Filter to obtain real other active scholars (excluding the user themselves)
-    const liveCompanions = Array.from(activePresenceMap.values()).filter(p => p.id !== id);
+    const liveCompanions = Array.from(activePresenceMap.values()).filter(p => p.id !== id && p.deviceId !== deviceId);
 
     res.json({
-      activeCount: activePresenceMap.size,
+      activeCount: Array.from(activePresenceMap.values()).filter(p => p.isOnline).length,
       companions: liveCompanions
     });
   } catch (err: any) {
@@ -275,6 +291,9 @@ Provide:
 3. "keyConcepts": Key concepts extracted (4-8 items). Each concept must have a "concept" name, "explanation" (intelligent, comprehensive, and clear, based only on the text), and "importance" (why it matters for the student's success).
 4. "vocabulary": A glossary of important vocabulary (5-10 terms). IMPORTANT: The "definition" must be derived SOLELY from how the term is used or defined in the provided text.
 5. "flashcards": list of 6-12 interactive flashcard pairs containing "front" (question or concept to recall) and "back" (detailed direct recall answer/definition).
+6. "feynman": The "Feynman Technique" (Explain like I'm 5): A single object breaking down the core topic into the absolute simplest, jargon-free terms possible, using a relatable real-world analogy. It must include "concept", "analogy", and "explanation".
+7. "mnemonics": Mnemonic Devices: An array of 3-5 catchy acronyms, rhymes, or memory tricks to help memorize difficult lists or formulas. Each must include "concept", "mnemonic", and "explanation".
+8. "discussionPrompts": Discussion / Essay Prompts: An array of 3-5 open-ended questions designed to make the student think critically and form their own arguments, perfect for exam preparation. Each must include "question" and "guidance".
 
 Return your response strictly as a JSON object matching this structural schema.
 `;
@@ -332,9 +351,41 @@ Return your response strictly as a JSON object matching this structural schema.
                   },
                   required: ["front", "back"]
                 }
+              },
+              feynman: {
+                type: Type.OBJECT,
+                properties: {
+                  concept: { type: Type.STRING },
+                  analogy: { type: Type.STRING },
+                  explanation: { type: Type.STRING }
+                },
+                required: ["concept", "analogy", "explanation"]
+              },
+              mnemonics: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    concept: { type: Type.STRING },
+                    mnemonic: { type: Type.STRING },
+                    explanation: { type: Type.STRING }
+                  },
+                  required: ["concept", "mnemonic", "explanation"]
+                }
+              },
+              discussionPrompts: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    guidance: { type: Type.STRING }
+                  },
+                  required: ["question", "guidance"]
+                }
               }
             },
-            required: ["summary", "sections", "keyConcepts", "vocabulary", "flashcards"]
+            required: ["summary", "sections", "keyConcepts", "vocabulary", "flashcards", "feynman", "mnemonics", "discussionPrompts"]
           }
         }
       });
@@ -476,13 +527,19 @@ async function startServer() {
     console.log(`[Socket.io] Client connected: ${socket.id}`);
 
     socket.on("join-lounge", (data) => {
-      const { id, name, subject, mode, streak, level, avatarChar } = data;
+      const { id, name, subject, mode, streak, level, avatarChar, photoURL, deviceId } = data;
       if (!id) return;
       
       // Clean up any old presence entries for this socket but with a different ID
       for (const [key, val] of activePresenceMap.entries()) {
-        if (val.socketId === socket.id && key !== id) {
-          activePresenceMap.delete(key);
+        if (key !== id) {
+          if (val.socketId === socket.id) {
+            activePresenceMap.delete(key);
+          } else if (deviceId && val.deviceId === deviceId) {
+            activePresenceMap.delete(key);
+          } else if (val.name === name && val.photoURL === photoURL && !val.isOnline) {
+            activePresenceMap.delete(key);
+          }
         }
       }
 
@@ -495,7 +552,10 @@ async function startServer() {
         level: Number(level) || 1,
         avatarChar: avatarChar || "S",
         lastSeen: Date.now(),
-        socketId: socket.id
+        socketId: socket.id,
+        photoURL: photoURL || "",
+        isOnline: true,
+        deviceId
       });
 
       socket.join("lounge");
@@ -504,13 +564,20 @@ async function startServer() {
     });
 
     socket.on("update-presence", (data) => {
-      const { id, name, subject, mode, streak, level, avatarChar } = data;
+      const { id, name, subject, mode, streak, level, avatarChar, photoURL, deviceId } = data;
       if (!id) return;
       
       // Clean up any old presence entries for this socket but with a different ID
       for (const [key, val] of activePresenceMap.entries()) {
-        if (val.socketId === socket.id && key !== id) {
-          activePresenceMap.delete(key);
+        if (key !== id) {
+          if (val.socketId === socket.id) {
+            val.isOnline = false;
+          }
+          if (deviceId && val.deviceId === deviceId) {
+            activePresenceMap.delete(key);
+          } else if (val.name === name && val.photoURL === photoURL && !val.isOnline) {
+            activePresenceMap.delete(key);
+          }
         }
       }
 
@@ -524,6 +591,9 @@ async function startServer() {
         existing.avatarChar = avatarChar || existing.avatarChar;
         existing.lastSeen = Date.now();
         existing.socketId = socket.id;
+        existing.photoURL = photoURL || existing.photoURL;
+        existing.isOnline = true;
+        if (deviceId) existing.deviceId = deviceId;
       } else {
         activePresenceMap.set(id, {
           id,
@@ -534,7 +604,10 @@ async function startServer() {
           level: Number(level) || 1,
           avatarChar: avatarChar || "S",
           lastSeen: Date.now(),
-          socketId: socket.id
+          socketId: socket.id,
+          photoURL: photoURL || "",
+          isOnline: true,
+          deviceId
         });
       }
       io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
@@ -545,7 +618,7 @@ async function startServer() {
       if (!toId || !fromId || !message) return;
 
       const recipient = activePresenceMap.get(toId);
-      if (recipient && recipient.socketId) {
+      if (recipient && recipient.socketId && recipient.isOnline) {
         io.to(recipient.socketId).emit("direct-message", {
           id: id || Math.random().toString(36).substring(2, 9),
           fromId,
@@ -562,7 +635,7 @@ async function startServer() {
       if (!toId || !fromId) return;
 
       const recipient = activePresenceMap.get(toId);
-      if (recipient && recipient.socketId) {
+      if (recipient && recipient.socketId && recipient.isOnline) {
         io.to(recipient.socketId).emit("user-typing", {
           fromId,
           isTyping
@@ -570,11 +643,47 @@ async function startServer() {
       }
     });
 
+    socket.on("send-global-announcement", (data) => {
+      const { message, fromName } = data;
+      if (!message) return;
+      io.to("lounge").emit("global-announcement", {
+        id: Math.random().toString(36).substring(2, 9),
+        message,
+        fromName: fromName || "System Admin",
+        timestamp: Date.now()
+      });
+    });
+
+    socket.on("send-admin-warning", (data) => {
+      const { targetId, message } = data;
+      if (!targetId || !message) return;
+      
+      const target = activePresenceMap.get(targetId);
+      if (target && target.socketId && target.isOnline) {
+        io.to(target.socketId).emit("admin-warning", { message });
+      }
+    });
+
+    socket.on("kick-user", (data) => {
+      const { targetId } = data;
+      if (!targetId) return;
+      
+      const target = activePresenceMap.get(targetId);
+      if (target && target.socketId) {
+        // Notify the user they were kicked
+        io.to(target.socketId).emit("kicked", { reason: "You have been disconnected by an administrator." });
+        // Make them offline
+        target.isOnline = false;
+        io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
+      }
+    });
+
     socket.on("disconnect", () => {
       let changed = false;
       for (const [key, val] of activePresenceMap.entries()) {
         if (val.socketId === socket.id) {
-          activePresenceMap.delete(key);
+          val.isOnline = false;
+          val.socketId = undefined;
           changed = true;
         }
       }
@@ -588,14 +697,20 @@ async function startServer() {
 
   // Background cleanup task for stale connections
   setInterval(() => {
-    const cutoff = Date.now() - 30000;
+    const cutoffOffline = Date.now() - 24 * 60 * 60 * 1000;
+    const cutoffOnline = Date.now() - 30000;
     let changed = false;
+    
     for (const [key, val] of activePresenceMap.entries()) {
-      if (val.lastSeen < cutoff && !val.socketId) {
+      if (val.lastSeen < cutoffOffline) {
         activePresenceMap.delete(key);
+        changed = true;
+      } else if (val.lastSeen < cutoffOnline && val.isOnline) {
+        val.isOnline = false;
         changed = true;
       }
     }
+    
     if (changed) {
       io.to("lounge").emit("lounge-update", Array.from(activePresenceMap.values()));
     }
@@ -616,7 +731,7 @@ async function startServer() {
   }
 
   httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server is running on port ${PORT} with WebSocket supported`);
+    console.log(`Server is running on http://localhost:${PORT} with WebSocket supported`);
   });
 }
 

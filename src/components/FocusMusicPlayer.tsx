@@ -59,6 +59,7 @@ export default function FocusMusicPlayer({
 
   const [activePlayer, setActivePlayer] = useState<"internal" | "spotify">(() => (localStorage.getItem("ai_study_player_type") as "internal" | "spotify") || "internal");
   const [spotifyInput, setSpotifyInput] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [spotifyEmbedUrl, setSpotifyEmbedUrl] = useState(() => localStorage.getItem("ai_study_spotify_embed") || "");
   const [showSpotifyHelp, setShowSpotifyHelp] = useState<boolean>(false);
 
@@ -98,7 +99,8 @@ export default function FocusMusicPlayer({
       localStorage.setItem("ai_study_spotify_embed", embedUrl);
       setSpotifyInput("");
     } else {
-      alert("Invalid Spotify URL. Please paste a valid link like https://open.spotify.com/playlist/... ");
+      setErrorMsg("Invalid Spotify URL. Please paste a valid link.");
+      setTimeout(() => setErrorMsg(""), 4000);
     }
   };
 
@@ -112,13 +114,16 @@ export default function FocusMusicPlayer({
     if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://")) {
       formattedUrl = "https://" + formattedUrl;
     }
+    
+    // Check if it's a YouTube URL
+    const isYoutube = formattedUrl.includes("youtube.com") || formattedUrl.includes("youtu.be");
 
     const newTrack: Track = {
       id: "custom-" + Date.now(),
       name: customTrackName,
-      type: "stream",
+      type: isYoutube ? "youtube" : "stream",
       src: formattedUrl,
-      description: "Custom stream track linked externally."
+      description: isYoutube ? "Custom YouTube link" : "Custom stream track linked externally."
     };
 
     onAddCustomTrack(newTrack);
@@ -137,7 +142,7 @@ export default function FocusMusicPlayer({
       
       <div className="flex items-center justify-between mb-4 border-b border-zinc-200/50 dark:border-zinc-800 pb-3">
         <h4 className="text-xs font-black text-black dark:text-white flex items-center gap-1.5 uppercase tracking-wider">
-          <Music className="w-4 h-4 text-brand-indigo shrink-0" />
+          <Music className="w-4 h-4 text-black dark:text-white shrink-0" />
           Focus Soundscapes
         </h4>
 
@@ -145,14 +150,14 @@ export default function FocusMusicPlayer({
           {/* Keyboard shortcuts tracker */}
           <button
             onClick={() => setShowHotkeysGuide(!showHotkeysGuide)}
-            className={`p-1.5 rounded-lg transition-all border ${
+            className={`p-1.5 rounded-lg transition-all border cursor-pointer relative z-10 ${
               showHotkeysGuide
-                ? "bg-brand-indigo/15 text-brand-indigo border-brand-indigo/30"
+                ? "bg-zinc-150 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
                 : "text-ios-secondary-text hover:text-black dark:hover:text-white border-transparent"
             }`}
             title="Interactive tactile hotkeys desk"
           >
-            <Keyboard className="w-4 h-4" />
+            <Keyboard className="w-4 h-4 pointer-events-none" />
           </button>
 
           {/* Help toggle */}
@@ -161,14 +166,14 @@ export default function FocusMusicPlayer({
               setShowHostingGuide(!showHostingGuide);
               setShowHotkeysGuide(false);
             }}
-            className={`p-1.5 rounded-lg transition-all border ${
+            className={`p-1.5 rounded-lg transition-all border cursor-pointer relative z-10 ${
               showHostingGuide
-                ? "bg-brand-indigo/15 text-brand-indigo border-brand-indigo/30"
+                ? "bg-zinc-150 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
                 : "text-ios-secondary-text hover:text-black dark:hover:text-white border-transparent"
             }`}
             title="How to get free links guide"
           >
-            <HelpCircle className="w-4 h-4" />
+            <HelpCircle className="w-4 h-4 pointer-events-none" />
           </button>
         </div>
       </div>
@@ -202,7 +207,8 @@ export default function FocusMusicPlayer({
             <label className="text-[10px] font-extrabold text-ios-secondary-text uppercase tracking-wider block mb-1.5 pl-0.5">
               Connect Spotify Playlist/Track
             </label>
-            <div className="flex gap-2">
+            {errorMsg && <p className="text-red-500 text-xs font-semibold mb-2">{errorMsg}</p>}
+                <div className="flex gap-2">
               <input
                 type="text"
                 value={spotifyInput}
@@ -283,7 +289,7 @@ export default function FocusMusicPlayer({
               return (
                 <span
                   key={i}
-                  className={`w-1 rounded-full bg-brand-indigo animate-pulse ${heights[i]} ${durations[i]}`}
+                  className={`w-1 rounded-full bg-black dark:bg-white animate-pulse ${heights[i]} ${durations[i]}`}
                 />
               );
             })}
@@ -317,10 +323,10 @@ export default function FocusMusicPlayer({
           {/* Main Toggle Button */}
           <button
             onClick={onTogglePlay}
-            className={`px-5 py-3 rounded-2xl font-black text-xs text-white shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all w-28 shrink-0 ${
+            className={`px-5 py-3 rounded-2xl font-black text-xs text-white dark:text-black shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all w-28 shrink-0 ${
               isPlaying
                 ? "bg-amber-500 hover:bg-amber-600"
-                : "bg-brand-indigo hover:bg-brand-indigo/90"
+                : "bg-black dark:bg-white hover:opacity-90"
             }`}
           >
             {isPlaying ? (
@@ -329,7 +335,7 @@ export default function FocusMusicPlayer({
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-white" /> Play
+                <Play className="w-3.5 h-3.5 fill-white dark:fill-black" /> Play
               </>
             )}
           </button>
@@ -343,7 +349,7 @@ export default function FocusMusicPlayer({
               {isMuted || volume === 0 ? (
                 <VolumeX className="w-4 h-4 text-red-500" />
               ) : (
-                <Volume2 className="w-4 h-4 text-brand-indigo" />
+                <Volume2 className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
               )}
             </button>
             <input
@@ -353,7 +359,7 @@ export default function FocusMusicPlayer({
               step="0.05"
               value={volume}
               onChange={(e) => onSetVolume(parseFloat(e.target.value))}
-              className="w-full accent-brand-indigo h-1 rounded-full cursor-pointer bg-zinc-250 dark:bg-zinc-800"
+              className="w-full accent-black dark:accent-white h-1 rounded-full cursor-pointer bg-zinc-250 dark:bg-zinc-800"
               title="Adjust Volume"
             />
           </div>
@@ -379,7 +385,7 @@ export default function FocusMusicPlayer({
               onClick={() => onSelectTrack(track.id)}
               className={`flex items-center justify-between p-2.5 rounded-xl text-xs cursor-pointer border select-none transition-all ${
                 selectedTrackId === track.id
-                  ? "bg-brand-indigo/10 border-brand-indigo text-brand-indigo font-black"
+                  ? "bg-zinc-100 dark:bg-zinc-800 border-black dark:border-white text-zinc-900 dark:text-zinc-100 font-black"
                   : "bg-ios-light-bg hover:bg-zinc-100/80 dark:bg-ios-dark-bg dark:hover:bg-zinc-900/80 border-zinc-200/50 dark:border-zinc-900 text-black dark:text-zinc-300"
               }`}
             >
@@ -439,7 +445,7 @@ export default function FocusMusicPlayer({
               <input
                 type="text"
                 required
-                placeholder="Direct MP3 Link (https://example.com/audio.mp3)"
+                placeholder="Direct MP3 Link or YouTube URL (https://youtube.com/...)"
                 value={customTrackUrl}
                 onChange={(e) => setCustomTrackUrl(e.target.value)}
                 className="w-full bg-ios-light-secondary dark:bg-ios-dark-secondary text-xs p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-black dark:text-white"
@@ -456,7 +462,7 @@ export default function FocusMusicPlayer({
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 text-xxs text-white bg-brand-indigo rounded-lg font-bold border-none"
+                className="px-4 py-1.5 text-xxs text-white dark:text-black bg-black dark:bg-white rounded-lg font-bold border-none"
               >
                 Save Channel
               </button>
@@ -479,7 +485,7 @@ export default function FocusMusicPlayer({
                 onClick={() => onSetSleepTimerMinutes(mins)}
                 className={`px-2.5 py-1 text-xxs font-black rounded-lg transition-all border ${
                   sleepTimerMinutes === mins
-                    ? "bg-brand-indigo border-brand-indigo text-white shadow-sm"
+                    ? "bg-black dark:bg-white border-black dark:border-white text-white dark:text-black shadow-sm"
                     : "bg-ios-light-bg dark:bg-ios-dark-bg border-zinc-200/50 dark:border-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100"
                 }`}
               >
@@ -489,7 +495,7 @@ export default function FocusMusicPlayer({
           </div>
           
           {sleepTimerMinutes !== null && isPlaying && (
-            <span className="text-[10px] font-mono text-brand-indigo font-bold bg-brand-indigo/10 px-2 py-0.5 rounded-lg animate-pulse shrink-0">
+            <span className="text-[10px] font-mono text-zinc-900 dark:text-zinc-100 font-bold bg-zinc-100 dark:bg-zinc-850 px-2 py-0.5 rounded-lg animate-pulse shrink-0">
               💤 {Math.floor(sleepTimerSecondsLeft / 60)}:{(sleepTimerSecondsLeft % 60).toString().padStart(2, "0")} left
             </span>
           )}
@@ -498,10 +504,10 @@ export default function FocusMusicPlayer({
 
       {/* Keyboard Shortcuts visual guide */}
       {showHotkeysGuide && (
-        <div className="mt-4 bg-brand-indigo/5 border border-brand-indigo/15 rounded-2xl p-4 space-y-3.5 text-xs text-black dark:text-zinc-200 select-none text-left font-sans">
-          <div className="flex items-center gap-1.5 border-b border-brand-indigo/10 pb-1.5">
-            <Keyboard className="w-4 h-4 text-brand-indigo" />
-            <h4 className="font-extrabold text-brand-indigo">Interactive Study Tactile Hotkeys</h4>
+        <div className="mt-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3.5 text-xs text-black dark:text-zinc-200 select-none text-left font-sans">
+          <div className="flex items-center gap-1.5 border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
+            <Keyboard className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            <h4 className="font-extrabold text-zinc-900 dark:text-zinc-100">Interactive Study Tactile Hotkeys</h4>
           </div>
 
           <p className="text-[10px] text-ios-secondary-text leading-snug">
@@ -539,21 +545,21 @@ export default function FocusMusicPlayer({
 
       {/* Free Hosting Guide modal accordion */}
       {showHostingGuide && (
-        <div className="mt-4 bg-brand-indigo/5 border border-brand-indigo/15 rounded-2xl p-4 space-y-3 text-xs leading-relaxed text-black dark:text-zinc-200 select-text text-left font-sans">
-          <div className="flex items-center gap-1.5 border-b border-brand-indigo/10 pb-1.5">
-            <Info className="w-4 h-4 text-brand-indigo" />
-            <h4 className="font-extrabold text-brand-indigo">Direct 100% Free Hosting Guide</h4>
+        <div className="mt-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3 text-xs leading-relaxed text-black dark:text-zinc-200 select-text text-left font-sans">
+          <div className="flex items-center gap-1.5 border-b border-zinc-200 dark:border-zinc-800 pb-1.5">
+            <Info className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            <h4 className="font-extrabold text-zinc-900 dark:text-zinc-100">Direct 100% Free Hosting Guide</h4>
           </div>
           
           <p className="text-[11px] text-ios-secondary-text leading-snug">
-            To use a custom focus track in this player, you need a <strong>Direct Link / Raw Stream URL</strong> that ends in <code>.mp3</code> or <code>.wav</code>. You can get these 100% free using these platforms:
+            To use a custom focus track in this player, you need a <strong>YouTube URL</strong> or a <strong>Direct Link / Raw Stream URL</strong> that ends in <code>.mp3</code> or <code>.wav</code>. You can get these 100% free using these platforms:
           </p>
 
           <div className="space-y-2.5 pt-1 text-[11px]">
             {/* Guide 1: Github */}
             <div>
               <h5 className="font-bold flex items-center gap-1 text-black dark:text-white">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo" />
+                <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
                 1. GitHub Pages / Repos (Highly Recommended)
               </h5>
               <p className="text-ios-secondary-text mt-0.5 leading-normal pl-3">
@@ -564,7 +570,7 @@ export default function FocusMusicPlayer({
             {/* Guide 2: Archive.org */}
             <div>
               <h5 className="font-bold flex items-center gap-1 text-black dark:text-white">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo" />
+                <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
                 2. Internet Archive (Archive.org)
               </h5>
               <p className="text-ios-secondary-text mt-0.5 leading-normal pl-3">
@@ -575,7 +581,7 @@ export default function FocusMusicPlayer({
             {/* Guide 3: Dropbox */}
             <div>
               <h5 className="font-bold flex items-center gap-1 text-black dark:text-white">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo" />
+                <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
                 3. Dropbox Link Suffix Hack
               </h5>
               <p className="text-ios-secondary-text mt-0.5 leading-normal pl-3">
@@ -586,7 +592,7 @@ export default function FocusMusicPlayer({
             {/* Guide 4: Google Drive */}
             <div>
               <h5 className="font-bold flex items-center gap-1 text-black dark:text-white">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo" />
+                <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
                 4. Google Drive Link Converter
               </h5>
               <p className="text-ios-secondary-text mt-0.5 leading-normal pl-3">

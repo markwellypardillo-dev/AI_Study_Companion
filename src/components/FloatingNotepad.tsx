@@ -53,13 +53,13 @@ export default function FloatingNotepad() {
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className={`fixed z-50 bottom-24 right-4 sm:right-6 backdrop-blur-[40px] backdrop-saturate-[1.5] bg-white/10 dark:bg-black/10 bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-white/5 border border-white/50 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] dark:shadow-[0_12px_40px_0_rgba(0,0,0,0.6)] ring-1 ring-black/5 dark:ring-white/5 rounded-2xl flex flex-col overflow-hidden transition-all duration-300 ${
-              isExpanded ? "w-[90vw] sm:w-[600px] h-[70vh]" : "w-[320px] h-[400px]"
+              isExpanded ? "w-[calc(100vw-32px)] sm:w-[600px] h-[70vh]" : "w-[calc(100vw-32px)] sm:w-[320px] h-[400px]"
             }`}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/40 dark:border-white/10 bg-white/30 dark:bg-white/5">
               <div className="flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-brand-indigo dark:text-indigo-400" />
+                <Edit3 className="w-4 h-4 text-black dark:text-white" />
                 <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 drop-shadow-sm">Scratchpad</h3>
               </div>
               <div className="flex items-center gap-1.5">
@@ -120,7 +120,7 @@ export default function FloatingNotepad() {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed z-40 bottom-6 right-6 w-14 h-14 bg-brand-indigo text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-indigo/30 hover:scale-105 active:scale-95 transition-all duration-200"
+        className="fixed z-40 bottom-6 right-6 w-14 h-14 bg-black dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all duration-200"
         title="Open Notepad"
       >
         {isOpen ? <X className="w-6 h-6" /> : <Edit3 className="w-6 h-6" />}

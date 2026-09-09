@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { auth, logout } from "./lib/firebase";
-import { loadProgressFromFirestore, saveProgressToFirestore } from "./lib/db";
+import { auth, logout, db } from "./lib/firebase";
+import { loadProgressFromFirestore, saveProgressToFirestore, logGlobalActivity, logGuestLogin, subscribeToMaintenanceMode, checkIfBanned } from "./lib/db";
 import { onAuthStateChanged } from "firebase/auth";
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy } from "firebase/firestore";
 import { LoginView } from "./components/LoginView";
 
 const logoUrl = "https://i.postimg.cc/ht4X0Tbj/LOGO-for-Ai-companion.png";
 import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   GraduationCap,
   Sparkles,
   BookOpen,
@@ -24,7 +28,15 @@ import {
   Settings,
   XCircle,
   CheckCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  FileText,
+  Play,
+  FolderOpen,
+  History,
+  Menu,
+  Trash2,
+  Camera,
+  UserPlus
 } from "lucide-react";
 import { AppMode, DifficultyTier, StudyGuideData, UserProgress, Track } from "./types";
 
@@ -64,17 +76,20 @@ export const DEFAULT_TRACKS: Track[] = [
   }
 ];
 import UploadView from "./components/UploadView";
+import GuideLoadingScreen from "./components/GuideLoadingScreen";
 import GuideView from "./components/GuideView";
 import QuizView from "./components/QuizView";
 import Flashcards from "./components/Flashcards";
 import Dashboard from "./components/Dashboard";
 import DynamicIsland from "./components/DynamicIsland";
 import FloatingNotepad from "./components/FloatingNotepad";
+import WelcomeTour from "./components/WelcomeTour";
 import { triggerConfettiWithSound as confetti, playNotificationSound } from "./lib/sounds";
 import { PRELOADED_SUBJECTS } from "./data/preloadedSubjects";
+import ReactPlayer from "react-player";
 
 const LOCAL_STORAGE_PROGRESS_KEY = "ai_study_companion_progress";
-import { initGlobalPresence, forceUpdatePresence, subscribeToMessages, getClientUid } from "./lib/socketPresence";
+import { initGlobalPresence, forceUpdatePresence, subscribeToMessages, getClientUid, subscribeToAnnouncements } from "./lib/socketPresence";
 
 const getLocalISOString = (d: Date) => {
   // Use local parts to build YYYY-MM-DD
@@ -200,21 +215,62 @@ const INITIAL_PROGRESS: UserProgress = {
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [progress, setProgress] = useState<UserProgress>(INITIAL_PROGRESS);
+  const [progress, setProgress] = useState<UserProgress>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_PROGRESS_KEY);
+    const photo = localStorage.getItem("ai_study_companion_photo_url") || "";
+    let baseProgress = INITIAL_PROGRESS;
+    if (saved) {
+      try {
+        baseProgress = { ...INITIAL_PROGRESS, ...JSON.parse(saved) };
+      } catch (err) {
+        console.error("Failed to parse progress", err);
+      }
+    }
+    return { ...baseProgress, photoURL: photo || baseProgress.photoURL || "" };
+  });
   const [activeMode, setActiveMode] = useState<AppMode>("upload");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem("sidebar_collapsed") === "true";
+  });
 
   const [user, setUser] = useState<any>(null);
   const [isGuestMode, setIsGuestMode] = useState<boolean>(false);
   const [authInitialized, setAuthInitialized] = useState<boolean>(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsub = subscribeToMaintenanceMode(setIsMaintenanceMode);
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        const isBanned = await checkIfBanned(currentUser.uid);
+        if (isBanned) {
+          await logout();
+          alert("Your account has been permanently banned.");
+          setUser(null);
+          setAuthInitialized(true);
+          return;
+        }
+      }
       setUser(currentUser);
       if (currentUser) {
         setIsGuestMode(false);
         const storedProgress = await loadProgressFromFirestore();
+        const photo = localStorage.getItem("ai_study_companion_photo_url") || (storedProgress && storedProgress.photoURL) || currentUser.photoURL || "";
         if (storedProgress) {
-          setProgress(prev => ({ ...prev, ...storedProgress }));
+          setProgress(prev => ({
+            ...prev,
+            ...storedProgress,
+            photoURL: photo || storedProgress.photoURL || prev.photoURL || ""
+          }));
+        } else {
+          if (photo) {
+            setProgress(prev => ({ ...prev, photoURL: photo }));
+          }
         }
       }
       setAuthInitialized(true);
@@ -239,12 +295,382 @@ export default function App() {
     initGlobalPresence(user);
   }, [user]);
 
+  useEffect(() => {
+    localStorage.setItem("sidebar_collapsed", String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
+  useEffect(() => {
+    forceUpdatePresence(user);
+  }, [progress.photoURL, user]);
+
+  useEffect(() => {
+    if (progress.photoURL) {
+      localStorage.setItem("ai_study_companion_photo_url", progress.photoURL);
+    } else {
+      localStorage.removeItem("ai_study_companion_photo_url");
+    }
+    window.dispatchEvent(
+      new CustomEvent("update-profile-photo", {
+        detail: { photoURL: progress.photoURL || "" }
+      })
+    );
+  }, [progress.photoURL]);
+
+  useEffect(() => {
+    const handleUpdateProfilePhoto = (e: any) => {
+      const { photoURL } = e.detail;
+      setProgress(prev => {
+        if (prev.photoURL === photoURL) return prev;
+        return { ...prev, photoURL };
+      });
+    };
+    window.addEventListener("update-profile-photo", handleUpdateProfilePhoto);
+    return () => window.removeEventListener("update-profile-photo", handleUpdateProfilePhoto);
+  }, []);
+
   // Document extraction variables
   const [fileName, setFileName] = useState<string>("");
   const [fileContent, setFileContent] = useState<string>("");
   const [guideData, setGuideData] = useState<StudyGuideData | null>(null);
   const [isGeneratingGuide, setIsGeneratingGuide] = useState<boolean>(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+
+  // Notification / Reminder Settings
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [reminderTime, setReminderTime] = useState("");
+  const [isReminderEnabled, setIsReminderEnabled] = useState(false);
+
+  useEffect(() => {
+    const savedTime = localStorage.getItem("study_reminder_time");
+    const isEnabled = localStorage.getItem("study_reminder_enabled") === "true";
+    if (savedTime) setReminderTime(savedTime);
+    if (isEnabled) setIsReminderEnabled(isEnabled);
+  }, []);
+
+  useEffect(() => {
+    let interval: any;
+    if (isReminderEnabled && reminderTime) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const currentTime = `${hours}:${minutes}`;
+
+        const lastNotified = localStorage.getItem("study_reminder_last_notified");
+        const todayStr = now.toDateString() + currentTime;
+
+        if (currentTime === reminderTime && lastNotified !== todayStr) {
+          if (Notification.permission === 'granted') {
+            new Notification("Study Time!", {
+              body: "It's time for your daily study session. Let's keep that streak going!",
+              icon: logoUrl,
+            });
+            localStorage.setItem("study_reminder_last_notified", todayStr);
+          }
+        }
+      }, 30000);
+    }
+    return () => clearInterval(interval);
+  }, [isReminderEnabled, reminderTime]);
+
+  const toggleReminder = async () => {
+    if (!isReminderEnabled) {
+      if (!("Notification" in window)) {
+        alert("This browser does not support desktop notifications.");
+        return;
+      }
+      if (Notification.permission !== "granted") {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+      }
+    }
+    const newState = !isReminderEnabled;
+    setIsReminderEnabled(newState);
+    localStorage.setItem("study_reminder_enabled", String(newState));
+  };
+
+  const updateReminderTime = (time: string) => {
+    setReminderTime(time);
+    localStorage.setItem("study_reminder_time", time);
+  };
+
+
+  // History Sidebar variables
+  const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"history" | "premade">("history");
+
+  const fetchHistory = async () => {
+    if (!user || isGuestMode) return;
+    setIsLoadingHistory(true);
+    try {
+      const guidesRef = collection(db, "users", user.uid, "studyGuides");
+      const snapshot = await getDocs(guidesRef);
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Sort in memory to avoid index issues for now
+      items.sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return timeB - timeA;
+      });
+      setHistoryItems(items);
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const renderSidebar = (isDesktop: boolean) => {
+    const isCurrentlyCollapsed = isDesktop && isSidebarCollapsed;
+
+    return (
+      <motion.div 
+        animate={isDesktop ? { width: isCurrentlyCollapsed ? 64 : 288 } : {}}
+        transition={{ type: "spring", stiffness: 320, damping: 30 }}
+        className={`bg-white dark:bg-[#09090b] border-r border-zinc-100/50 dark:border-zinc-900/50 flex flex-col shrink-0 z-50 overflow-hidden ${
+          isDesktop 
+            ? "hidden lg:flex sticky top-0 h-dvh" 
+            : "flex h-full w-72"
+        }`}
+      >
+        {/* Sidebar Header */}
+        <div className="p-4 border-0 flex items-center justify-between h-16 shrink-0 relative overflow-hidden w-[288px]">
+          {/* Logo + Title group (shifts/fades out as it collapses) */}
+          <div className={`flex items-center gap-2 truncate transition-all duration-300 ${
+            isCurrentlyCollapsed ? "opacity-0 -translate-x-4 pointer-events-none" : "opacity-100 translate-x-0"
+          }`}>
+            <img src={logoUrl} alt="Logo" className="w-5 h-5 rounded-md object-cover shrink-0" referrerPolicy="no-referrer" />
+            <span className="truncate font-bold text-sm text-black dark:text-white">AI Study Companion</span>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            {isDesktop ? (
+              isCurrentlyCollapsed ? (
+                /* Centered open button when collapsed */
+                <div className="absolute inset-y-0 left-0 w-16 flex items-center justify-center">
+                  <button 
+                    onClick={() => setIsSidebarCollapsed(false)}
+                    className="relative w-10 h-10 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center transition-all duration-300 group cursor-pointer"
+                    title="Open Sidebar"
+                  >
+                    {/* Logo image with transition */}
+                    <div className="transition-all duration-300 group-hover:opacity-0 group-hover:scale-75">
+                      <img src={logoUrl} alt="Logo" className="w-6 h-6 rounded-md object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                    {/* Chevron icon showing on hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 text-zinc-600 dark:text-zinc-300">
+                      <ChevronRight className="w-5 h-5" />
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                /* Collapse button when expanded */
+                <button 
+                  onClick={() => setIsSidebarCollapsed(true)} 
+                  className="text-zinc-400 hover:text-black dark:hover:text-white transition-colors cursor-pointer p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 shrink-0"
+                  title="Collapse Sidebar"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )
+            ) : (
+              <button onClick={() => setIsHistorySidebarOpen(false)} className="text-zinc-500 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0">
+                <XCircle className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar Content (Hidden/Collapsed on desktop when isSidebarCollapsed is true) */}
+        <div className={`flex-1 flex flex-col min-h-0 transition-all duration-300 overflow-hidden ${
+          isCurrentlyCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`} style={{ width: 288 }}>
+          {/* Segmented controls / Tabs */}
+          <div className="px-3 py-2 bg-zinc-50 dark:bg-zinc-900/40 border-0 flex gap-1.5 shrink-0">
+            <button
+              onClick={() => setSidebarTab("history")}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                sidebarTab === "history"
+                  ? "bg-black dark:bg-white text-white dark:text-black shadow-sm"
+                  : "text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              }`}
+            >
+              History
+            </button>
+            <button
+              onClick={() => setSidebarTab("premade")}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                sidebarTab === "premade"
+                  ? "bg-black dark:bg-white text-white dark:text-black shadow-sm"
+                  : "text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              }`}
+            >
+              Premade
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-2">
+            {sidebarTab === "history" ? (
+              isGuestMode ? (
+                <div className="p-4 text-center">
+                  <p className="text-xs text-zinc-500 mb-3 leading-relaxed">You are currently in Guest Mode.</p>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">Log in to automatically save, sync, and persist your custom generated study materials across sessions.</p>
+                </div>
+              ) : isLoadingHistory ? (
+                <div className="p-4 text-xs text-zinc-500 text-center">Loading history...</div>
+              ) : historyItems.length === 0 ? (
+                <div className="p-4 text-xs text-zinc-500 text-center">No custom study guides yet. Upload some files to start!</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {historyItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setFileName(item.fileName);
+                        setGuideData(item.guideData);
+                        setActiveMode("explore");
+                        if (!isDesktop) {
+                          setIsHistorySidebarOpen(false);
+                        }
+                      }}
+                      className="text-left p-3 rounded-lg text-xs hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors truncate font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                    >
+                      {item.fileName}
+                    </button>
+                  ))}
+                </div>
+              )
+            ) : (
+              /* Premade files */
+              <div className="flex flex-col gap-2">
+                {PRELOADED_SUBJECTS.map((doc) => (
+                  <div
+                    key={doc.id}
+                    onClick={() => {
+                      handleLoadPremade(doc);
+                      if (!isDesktop) {
+                        setIsHistorySidebarOpen(false);
+                      }
+                    }}
+                    className="text-left p-3 rounded-xl border-0 bg-ios-light-secondary dark:bg-[#121215] hover:ring-1 hover:ring-zinc-300 dark:hover:ring-zinc-850 cursor-pointer transition-all flex flex-col gap-1.5 group hover:-translate-y-0.5 active:scale-98 shadow-sm"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-black dark:text-white" />
+                      <span className="text-[9px] font-extrabold text-black dark:text-white uppercase bg-zinc-200/60 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+                        {doc.title.split(".").pop()?.toUpperCase()}
+                      </span>
+                    </div>
+                    <h3 className="text-xs font-bold text-black dark:text-white truncate group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
+                      {doc.title.replace(/\.[^/.]+$/, "")}
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                      {doc.short}
+                    </p>
+                    <div className="mt-1 flex items-center gap-1 text-[10px] text-zinc-500 dark:text-zinc-400 font-bold group-hover:text-black dark:group-hover:text-white transition-colors">
+                      <span>Try Subject</span>
+                      <Play className="w-2.5 h-2.5 fill-current text-current" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Unified Sidebar Footer with Beautiful Transitions */}
+        <div className="border-t border-zinc-100/50 dark:border-zinc-900/50 bg-zinc-50/50 dark:bg-[#0c0c0e]/50 shrink-0 h-[120px] relative overflow-hidden w-[288px]">
+          {/* Expanded Footer Content */}
+          <div className={`absolute inset-0 p-4 flex flex-col gap-3 transition-all duration-300 ${
+            isCurrentlyCollapsed ? "opacity-0 translate-y-4 pointer-events-none" : "opacity-100 translate-y-0"
+          }`}>
+            <button
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className="text-left w-full flex items-center gap-2.5 px-1.5 py-1 rounded-xl hover:bg-zinc-200/50 dark:hover:bg-zinc-900/50 transition-all active:scale-[0.98] focus:outline-none cursor-pointer"
+            >
+              {progress.photoURL ? (
+                <img
+                  src={progress.photoURL}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover border-0 shrink-0 shadow-sm"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 border-0 flex items-center justify-center text-zinc-950 dark:text-zinc-50 font-black text-xs uppercase shrink-0 shadow-sm">
+                  {isGuestMode ? "G" : user?.email?.charAt(0) || "U"}
+                </div>
+              )}
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-xs font-bold text-black dark:text-white truncate">
+                  {isGuestMode ? "Guest User" : user?.email || "User"}
+                </p>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium truncate">
+                  {isGuestMode ? "Limited Session" : "Premium Member"}
+                </p>
+              </div>
+            </button>
+
+            <div className="flex justify-start px-1.5">
+              <button
+                onClick={() => {
+                  setIsSettingsOpen(!isSettingsOpen);
+                  if (!isDesktop) {
+                    setIsHistorySidebarOpen(false);
+                  }
+                }}
+                className="w-10 h-10 rounded-xl bg-ios-light-secondary dark:bg-ios-dark-secondary border-0 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all flex items-center justify-center text-zinc-700 dark:text-zinc-300 cursor-pointer shadow-sm active:scale-95"
+                title="Open App Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Collapsed Footer Content (Centered inside the 64px area) */}
+          <div className={`absolute inset-y-0 left-0 w-16 py-6 flex flex-col items-center justify-center gap-4 transition-all duration-300 ${
+            isCurrentlyCollapsed ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-75 -translate-y-4 pointer-events-none"
+          }`}>
+            {/* Profile Avatar Button */}
+            <button
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className="relative w-8 h-8 rounded-full border-0 shrink-0 shadow-sm focus:outline-none transition-transform active:scale-95 cursor-pointer hover:ring-2 hover:ring-[#5a4bff]/50 dark:hover:ring-[#8075ff]/50"
+              title="View Profile & Account"
+            >
+              {progress.photoURL ? (
+                <img
+                  src={progress.photoURL}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover border-0 shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 border-0 flex items-center justify-center text-zinc-950 dark:text-zinc-50 font-black text-xs uppercase shrink-0">
+                  {isGuestMode ? "G" : user?.email?.charAt(0) || "U"}
+                </div>
+              )}
+            </button>
+
+            {/* Settings Button */}
+            <button
+              onClick={() => {
+                setIsSettingsOpen(!isSettingsOpen);
+              }}
+              className="w-10 h-10 rounded-xl bg-ios-light-secondary dark:bg-ios-dark-secondary border-0 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all flex items-center justify-center text-zinc-700 dark:text-zinc-300 cursor-pointer shadow-sm active:scale-95"
+              title="Open App Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, [user]);
 
   useEffect(() => {
     localStorage.setItem("ai_study_companion_active_file", fileName);
@@ -285,6 +711,19 @@ export default function App() {
       }
     });
 
+    const unsubAnnouncements = subscribeToAnnouncements((data) => {
+      window.dispatchEvent(
+        new CustomEvent("add-notification", {
+          detail: {
+            title: `System Broadcast • ${data.fromName}`,
+            description: data.message,
+            type: "warning",
+            badge: "📢 Announcement",
+          }
+        })
+      );
+    });
+
     const handleOpenChatAction = (e: any) => {
       if (activeModeRef.current !== "dashboard") {
         setActiveMode("dashboard");
@@ -298,6 +737,7 @@ export default function App() {
 
     return () => {
       unsub();
+      unsubAnnouncements();
       window.removeEventListener("open-chat-action", handleOpenChatAction);
     };
   }, []);
@@ -322,7 +762,14 @@ export default function App() {
   const [musicTracks, setMusicTracks] = useState<Track[]>(() => {
     const saved = localStorage.getItem("custom_tracks_data");
     const parsedSaved = saved ? JSON.parse(saved) : [];
-    return [...DEFAULT_TRACKS, ...parsedSaved];
+    const all = [...DEFAULT_TRACKS, ...parsedSaved];
+    // Auto-migrate any existing youtube URLs saved as 'stream'
+    return all.map(t => {
+      if (t.src && (t.src.includes("youtube.com") || t.src.includes("youtu.be"))) {
+        return { ...t, type: "youtube" };
+      }
+      return t;
+    });
   });
   const [selectedTrackId, setSelectedTrackId] = useState<string>("40hz-binaural");
   const [musicIsPlaying, setMusicIsPlaying] = useState<boolean>(false);
@@ -353,7 +800,20 @@ export default function App() {
   useEffect(() => {
     const handleUpdate = () => setLocalActivityTrigger(prev => prev + 1);
     window.addEventListener("local-activity-updated", handleUpdate);
-    return () => window.removeEventListener("local-activity-updated", handleUpdate);
+    
+    let lastDate = new Date().toDateString();
+    const interval = setInterval(() => {
+      const currentDate = new Date().toDateString();
+      if (currentDate !== lastDate) {
+        lastDate = currentDate;
+        handleUpdate();
+      }
+    }, 60000); // Check every minute for day change
+    
+    return () => {
+      window.removeEventListener("local-activity-updated", handleUpdate);
+      clearInterval(interval);
+    };
   }, []);
 
   // Automatically calculate and synchronize the streak across sessions
@@ -560,7 +1020,17 @@ export default function App() {
     setMusicError(null);
     const targetTrack = tracksList.find((t) => t.id === trackId) || tracksList[0];
 
-    if (targetTrack.type === "synth") {
+    // Auto-detect youtube URLs if type is incorrectly set to stream
+    if (targetTrack.src && (targetTrack.src.includes("youtube.com") || targetTrack.src.includes("youtu.be"))) {
+      targetTrack.type = "youtube";
+    }
+
+    if (targetTrack.type === "youtube") {
+      stopSynth();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    } else if (targetTrack.type === "synth") {
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -578,12 +1048,26 @@ export default function App() {
         if (audioRef.current.src !== pathUrl) {
           audioRef.current.src = pathUrl;
         }
-        audioRef.current.play().catch((error) => {
-          console.error("Audio Playback aborted:", error);
-          setMusicError("Unable to stream audio track. Check link or connectivity.");
-          setMusicIsPlaying(false);
-          stopSynth();
-        });
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            const errorStr = error?.message || String(error);
+            if (error?.name === 'AbortError' || errorStr.includes('interrupted') || errorStr.includes('removed from the document')) {
+              // Silently ignore expected interruption errors
+              return;
+            }
+            if (error?.name === 'NotAllowedError') {
+              setMusicError("Autoplay blocked by browser. Please interact with the page first.");
+              setMusicIsPlaying(false);
+              stopSynth();
+              return;
+            }
+            console.error("Audio Playback aborted:", error);
+            setMusicError("Unable to stream audio track. Check link or connectivity.");
+            setMusicIsPlaying(false);
+            stopSynth();
+          });
+        }
       }
     }
   };
@@ -817,7 +1301,12 @@ export default function App() {
         if (!parsed.unlockedAchievements) {
           parsed.unlockedAchievements = ["first_upload", "focus_1"];
         }
-        setProgress(parsed);
+        const photo = localStorage.getItem("ai_study_companion_photo_url") || "";
+        setProgress(prev => ({
+          ...prev,
+          ...parsed,
+          photoURL: photo || parsed.photoURL || prev.photoURL || ""
+        }));
       } catch (e) {
         console.error("Failed to parse progress, resetting to defaults", e);
       }
@@ -935,9 +1424,12 @@ export default function App() {
   };
 
   // Sync progress data to localStorage
-  const syncProgress = (updated: UserProgress) => {
-    setProgress(updated);
-    localStorage.setItem(LOCAL_STORAGE_PROGRESS_KEY, JSON.stringify(updated));
+  const syncProgress = (updated: Partial<UserProgress>) => {
+    setProgress(prev => {
+      const merged = { ...prev, ...updated, photoURL: updated.photoURL || prev.photoURL || "" };
+      localStorage.setItem(LOCAL_STORAGE_PROGRESS_KEY, JSON.stringify(merged));
+      return merged;
+    });
   };
 
   const handleToggleTheme = () => {
@@ -1006,10 +1498,34 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [isQuotaQueue, quotaRetrySeconds]);
 
+  // Handle instant premium loading of premade files
+  const handleLoadPremade = async (subject: any) => {
+    setIsHistorySidebarOpen(false);
+    setFileName(subject.title);
+    setFileContent(subject.content);
+    setIsGeneratingGuide(true);
+    setActiveMode("upload"); // visually show parsing animation
+    await handleFileParsed(subject.title, subject.content);
+  };
+
   // Triggered when file has completed parsing
   const handleFileParsed = async (name: string, content: string) => {
     let shouldHoldLoading = false;
     try {
+      // Record activity for streak
+      try {
+        const todayStr = getLocalISOString(new Date());
+        const saved = localStorage.getItem("ai_study_companion_simulated_dates");
+        const list = saved ? JSON.parse(saved) : [];
+        if (!list.includes(todayStr)) {
+          list.push(todayStr);
+          localStorage.setItem("ai_study_companion_simulated_dates", JSON.stringify(list));
+          window.dispatchEvent(new Event("local-activity-updated"));
+        }
+      } catch (e) {
+        console.error("Failed to log activity for streak:", e);
+      }
+
       setFileName(name);
       setFileContent(content);
       setIsGeneratingGuide(true);
@@ -1055,6 +1571,22 @@ export default function App() {
       }
 
       const generatedGuide: StudyGuideData = await response.json();
+      
+      // Save to Firestore history
+      if (user && !isGuestMode) {
+        logGlobalActivity("generate_guide", { fileName: name });
+        try {
+          const guidesRef = collection(db, "users", user.uid, "studyGuides");
+          await addDoc(guidesRef, {
+            fileName: name,
+            guideData: generatedGuide,
+            createdAt: serverTimestamp()
+          });
+        } catch (dbErr) {
+          console.error("Failed to save guide to history:", dbErr);
+        }
+      }
+
       setGuideData(generatedGuide);
       setActiveMode("explore"); // Load the Mode Selection Hub
 
@@ -1190,6 +1722,9 @@ export default function App() {
 
   // Triggered when quiz finishes
   const handleQuizSubmitted = (score: number, total: number, difficulty: DifficultyTier) => {
+    if (user && !isGuestMode) {
+      logGlobalActivity("quiz_submitted", { score, total, difficulty, fileName });
+    }
     const xpReward = score * 100;
     const newLog = {
       id: "std-" + Date.now(),
@@ -1206,6 +1741,9 @@ export default function App() {
 
   // Triggered when Pomodoro focus concludes
   const handleFocusComplete = (minutes: number) => {
+    if (user && !isGuestMode) {
+      logGlobalActivity("focus_completed", { minutes });
+    }
     const addedSecs = minutes * 60;
     try {
       const todayStr = getLocalISOString(new Date());
@@ -1251,28 +1789,254 @@ export default function App() {
     setActiveMode("upload");
   };
 
-  if (!user && !isGuestMode) {
-    return <LoginView onLogin={setUser} onEnterGuest={() => setIsGuestMode(true)} />;
+  const isAdminUser = user?.email === 'pmarkwelly@gmail.com';
+
+  if (isMaintenanceMode && !isAdminUser) {
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 text-black dark:text-white p-4 md:p-8 lg:p-12 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-[120px]"></div>
+          <div className="absolute top-[60%] -right-[10%] w-[50%] h-[50%] bg-amber-500/10 dark:bg-amber-500/20 rounded-full blur-[120px]"></div>
+        </div>
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 w-full max-w-lg md:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto bg-white/70 dark:bg-zinc-900/70 backdrop-blur-3xl border border-zinc-200/50 dark:border-zinc-800/50 p-8 md:p-16 lg:p-20 rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl shadow-black/5"
+        >
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 lg:gap-24">
+            <div className="flex-1 text-center lg:text-left flex flex-col items-center lg:items-start">
+              <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 bg-amber-100 dark:bg-amber-900/30 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner relative overflow-hidden">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0 opacity-20 border-2 border-amber-500 rounded-[2rem] border-dashed"
+                />
+                <Settings className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 text-amber-500 relative z-10" />
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-7xl font-black mb-6 tracking-tight text-zinc-900 dark:text-white leading-[1.1]">
+                Pardon<br className="hidden lg:block" /> our dust
+              </h1>
+              <p className="text-zinc-600 dark:text-zinc-400 text-base md:text-lg lg:text-xl leading-relaxed max-w-xl">
+                The AI Study Companion platform is currently undergoing scheduled maintenance to bring you new features and a better experience. We'll be back shortly!
+              </p>
+            </div>
+            
+            <div className="flex-1 w-full flex flex-col gap-4 lg:gap-6 lg:mt-0 lg:pt-8 justify-center">
+              <p className="text-xs lg:text-sm font-bold text-zinc-500 uppercase tracking-wider text-center lg:text-left mb-2 lg:mb-4">What we are working on</p>
+              
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-zinc-100/90 dark:bg-zinc-950/90 rounded-3xl p-6 flex items-center gap-6 text-left border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm"
+              >
+                <div className="w-14 h-14 lg:w-16 lg:h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center shrink-0">
+                  <Sparkles className="w-7 h-7 lg:w-8 lg:h-8 text-indigo-500" />
+                </div>
+                <div>
+                  <p className="text-lg lg:text-xl font-bold text-zinc-900 dark:text-white mb-1">Upgrading AI Models</p>
+                  <p className="text-sm lg:text-base text-zinc-500">Enhancing study guide generation</p>
+                </div>
+              </motion.div>
+              
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="bg-zinc-100/90 dark:bg-zinc-950/90 rounded-3xl p-6 flex items-center gap-6 text-left border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm"
+              >
+                <div className="w-14 h-14 lg:w-16 lg:h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center shrink-0">
+                  <Zap className="w-7 h-7 lg:w-8 lg:h-8 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-lg lg:text-xl font-bold text-zinc-900 dark:text-white mb-1">Platform Stability</p>
+                  <p className="text-sm lg:text-base text-zinc-500">Improving speed and reliability</p>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+        
+        <div className="absolute bottom-6 md:bottom-12 text-center text-sm md:text-base text-zinc-500 font-medium">
+          <p>Thank you for your patience.</p>
+        </div>
+      </div>
+    );
   }
 
+  if (!user && !isGuestMode) {
+    return <LoginView onLogin={setUser} onEnterGuest={() => {
+      setIsGuestMode(true);
+      const guestName = `Guest_${Math.floor(Math.random() * 10000)}`;
+      logGuestLogin(guestName);
+      logGlobalActivity("guest_login", { isGuest: true, guestId: guestName, guestName: guestName });
+    }} />;
+  }
+
+  const currentTrack = musicTracks.find((t) => t.id === selectedTrackId) || musicTracks[0];
+  const isYoutubeTrack = currentTrack?.type === "youtube";
+
   return (
-    <div className="min-h-screen bg-ios-light-bg dark:bg-ios-dark-bg font-sans text-black dark:text-white selection:bg-brand-indigo/20 transition-colors duration-300">
-      
-      {/* Upper Navigation Header bar */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-ios-light-bg/75 dark:bg-ios-dark-bg/75 border-b border-zinc-200/60 dark:border-zinc-900/60 transition-colors px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-        <div id="desktop-app-header-brand" className="aria-label flex items-center gap-1.5 sm:gap-2">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl overflow-hidden flex items-center justify-center shadow-md shadow-brand-indigo/15 hover:rotate-6 transition-transform bg-white border border-zinc-200/50">
-            <img src={logoUrl} alt="AI Study Companion Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+    <div className="min-h-dvh bg-ios-light-bg dark:bg-ios-dark-bg font-sans text-black dark:text-white selection:bg-zinc-200 dark:selection:bg-zinc-800 transition-colors duration-300 flex">
+      <WelcomeTour />
+      <div style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '200px', height: '200px', pointerEvents: 'none', zIndex: -10, display: isYoutubeTrack ? 'block' : 'none' }}>
+        <ReactPlayer 
+          url={currentTrack?.type === 'youtube' ? currentTrack.src : "https://www.youtube.com/watch?v=dQw4w9WgXcQ"} 
+          playing={isYoutubeTrack && musicIsPlaying} 
+          volume={musicIsMuted ? 0 : musicVolume}
+          onPlay={() => {
+            if (isYoutubeTrack) setMusicIsPlaying(true);
+          }}
+          onPause={() => {
+            if (isYoutubeTrack) setMusicIsPlaying(false);
+          }}
+          onEnded={() => {
+            if (isYoutubeTrack) setMusicIsPlaying(false);
+          }}
+          onError={(e) => {
+            if (isYoutubeTrack) {
+              console.error("YouTube Player Error:", e);
+              setMusicError("Unable to play YouTube track.");
+              setMusicIsPlaying(false);
+            }
+          }}
+          width="200px"
+          height="200px"
+          config={{
+            youtube: {
+              playerVars: { 
+                autoplay: 0, 
+                playsinline: 1,
+                controls: 0,
+                disablekb: 1,
+                fs: 0
+              }
+            }
+          }}
+        />
+      </div>
+      {/* Google-like Account / Profile Popover Menu for Collapsed Sidebar */}
+      <AnimatePresence>
+        {isProfileMenuOpen && (
+          <>
+            {/* Backdrop layer to capture outside clicks */}
+            <div
+              className="fixed inset-0 z-[190] cursor-default"
+              onClick={() => setIsProfileMenuOpen(false)}
+            />
+
+            {/* Profile Popover Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              transition={{ type: "spring", damping: 20, stiffness: 220 }}
+              className={`fixed bottom-20 w-[calc(100vw-32px)] sm:w-[320px] rounded-[28px] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.16)] border z-[200] bg-[#e9eef6] dark:bg-[#1e1f22] border-zinc-200/60 dark:border-zinc-800/80 flex flex-col items-center justify-center font-sans animate-in fade-in zoom-in-95 duration-150 left-4 ${
+                isSidebarCollapsed ? "sm:left-20" : "sm:left-[304px]"
+              }`}
+            >
+              {/* Center Profile Picture Circle with Camera Overlay */}
+              <div className="relative mt-2">
+                {progress.photoURL ? (
+                  <img
+                    src={progress.photoURL}
+                    alt="Profile"
+                    className="w-[84px] h-[84px] rounded-full object-cover shadow-sm ring-4 ring-white dark:ring-zinc-900 shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-[84px] h-[84px] rounded-full bg-zinc-300 dark:bg-zinc-800 flex items-center justify-center text-zinc-950 dark:text-zinc-50 font-black text-2xl uppercase shrink-0 shadow-sm ring-4 ring-white dark:ring-zinc-900">
+                    {isGuestMode ? "G" : user?.email?.charAt(0) || "U"}
+                  </div>
+                )}
+                {/* Decorative Camera Badge (Matches second image) */}
+                <div className="absolute bottom-0 right-0 w-7 h-7 bg-white dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center justify-center cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-750 transition-all">
+                  <Camera className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
+                </div>
+              </div>
+
+              {/* Greeting */}
+              <h3 className="mt-4 text-[17px] font-bold text-zinc-900 dark:text-white text-center leading-snug">
+                Hi, {(user?.displayName || user?.email?.split('@')[0] || "Student").toUpperCase()}!
+              </h3>
+
+              {/* Email Address */}
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 text-center select-all truncate max-w-full">
+                {user?.email || "student@example.com"}
+              </p>
+
+              {/* Separator / Spacer */}
+              <div className="w-full h-px bg-zinc-200/50 dark:bg-zinc-800/50 my-5" />
+
+              {/* Quick Actions Pills Row */}
+              <div className="flex gap-2.5 w-full">
+                {/* Switch Account */}
+                <button
+                  onClick={() => {
+                    setIsProfileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex-1 py-3 px-4 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 text-xs font-bold text-zinc-800 dark:text-zinc-200 shadow-sm active:scale-95 cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-[#5a4bff] dark:text-[#8075ff]" />
+                  <span>Switch account</span>
+                </button>
+
+                {/* Sign Out */}
+                <button
+                  onClick={() => {
+                    setIsProfileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex-1 py-3 px-4 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 text-xs font-bold text-zinc-800 dark:text-zinc-200 shadow-sm active:scale-95 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-zinc-650 dark:text-zinc-400" />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {renderSidebar(true)}
+
+      <div className="flex-1 flex flex-col min-h-dvh min-w-0">
+        <AnimatePresence>
+          {isHistorySidebarOpen && (
+            <div className="lg:hidden">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsHistorySidebarOpen(false)}
+                className="fixed inset-0 bg-black/50 z-[150] backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="fixed top-0 left-0 h-full w-72 bg-white dark:bg-[#09090b] border-0 z-[160] flex flex-col shadow-2xl"
+              >
+                {renderSidebar(false)}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Upper Navigation Header bar */}
+        <header className="sticky top-0 z-40 backdrop-blur-md bg-ios-light-bg/75 dark:bg-ios-dark-bg/75 border-0 transition-colors px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Mobile hamburger menu toggle */}
+            <button 
+              onClick={() => setIsHistorySidebarOpen(true)}
+              className="flex items-center justify-center text-black dark:text-white shrink-0 lg:hidden cursor-pointer hover:opacity-80 transition-opacity"
+              title="Open Companion Menu"
+            >
+              <Menu className="w-5 h-5 text-black dark:text-white" />
+            </button>
+            <span className="text-sm sm:text-base font-bold text-black dark:text-white lg:hidden">Companion</span>
           </div>
-          <div>
-            <h1 className="text-xs sm:text-sm font-black tracking-tight flex items-center gap-1 sm:gap-1.5 text-black dark:text-white">
-              AI Study Companion
-              <span className="text-[10px] sm:text-[11px] px-1.5 py-0.5 font-bold tracking-normal uppercase bg-brand-indigo/10 text-brand-indigo rounded-md">
-                V1.5
-              </span>
-            </h1>
-          </div>
-        </div>
  
         {/* Gamified Core Status widgets inside bar */}
         <div className="flex items-center gap-2 sm:gap-4">
@@ -1280,8 +2044,8 @@ export default function App() {
  
 
  
-          <div className="hidden sm:flex items-center gap-1.5 text-xs font-black bg-brand-indigo/10 px-3 py-2 rounded-xl text-brand-indigo">
-            <Zap className="w-4 h-4 fill-brand-indigo" />
+          <div className="hidden sm:flex items-center gap-1.5 text-xs font-black bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded-xl text-zinc-950 dark:text-zinc-50">
+            <Zap className="w-4 h-4 text-zinc-950 dark:text-zinc-50 fill-zinc-950 dark:fill-zinc-50" />
             <span>LVL {progress.level} Scholar</span>
           </div>
  
@@ -1292,50 +2056,150 @@ export default function App() {
               else if (guideData) setActiveMode("explore");
               else setActiveMode("upload");
             }}
-            className={`p-2 sm:p-2.5 rounded-xl border transition-colors flex items-center gap-2 text-xs font-bold ${
+            className={`p-2 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer ${
               activeMode === "dashboard"
-                ? "bg-brand-indigo text-white border-brand-indigo"
-                : "bg-ios-light-secondary dark:bg-ios-dark-secondary border-zinc-200 dark:border-zinc-800 text-black dark:text-white hover:opacity-85"
+                ? "text-zinc-950 dark:text-zinc-50 scale-105"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:opacity-100"
             }`}
             title="Profile Dashboard & Pomodoro"
           >
-            <LayoutDashboard className="w-4 h-4" />
+            <LayoutDashboard className="w-5 h-5" />
             <span className="hidden md:inline">Dashboard</span>
-          </button>
- 
-          {/* Theme solar toggler */}
-          <button
-            id="btn-toggle-solar-scheme"
-            onClick={handleToggleTheme}
-            className="p-2 sm:p-2.5 rounded-xl bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
-            title="Toggle contrast colors"
-          >
-            {theme === "light" ? (
-              <Moon className="w-4 h-4 text-zinc-650" />
-            ) : (
-              <Sun className="w-4 h-4 text-amber-400" />
-            )}
-          </button>
-
-          {/* Logout App Button */}
-          <button
-            id="btn-app-logout"
-            onClick={handleLogout}
-            className="p-2 sm:p-2.5 rounded-xl bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:text-red-500 dark:hover:border-red-900/50 transition-colors duration-200"
-            title="Sign out / Exit Guest Mode"
-          >
-            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
+
+      {/* Settings Popover */}
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <>
+            {/* Backdrop layer to capture outside clicks */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[190] bg-black/20 dark:bg-black/40 backdrop-blur-[2px] cursor-default"
+              onClick={() => setIsSettingsOpen(false)}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              transition={{ type: "spring", damping: 20, stiffness: 220 }}
+              className={`fixed bottom-20 w-[calc(100vw-32px)] sm:w-[320px] rounded-[28px] p-5 shadow-[0_16px_48px_rgba(0,0,0,0.16)] border z-[200] bg-[#e9eef6] dark:bg-[#1e1f22] border-zinc-200/60 dark:border-zinc-800/80 flex flex-col font-sans animate-in fade-in zoom-in-95 duration-150 left-4 ${
+                isSidebarCollapsed ? "sm:left-20" : "sm:left-[304px]"
+              }`}
+            >
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="font-bold text-base sm:text-lg text-black dark:text-white flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-zinc-950 dark:text-zinc-50" />
+                  Settings
+                </h3>
+                <button
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="p-1 rounded-full hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 text-zinc-500 transition-colors cursor-pointer"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-3.5 sm:p-4 bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                  <div className="flex justify-between items-center gap-3 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold text-xs sm:text-sm text-black dark:text-white truncate">Daily Study Reminder</h4>
+                      <p className="text-[10px] sm:text-xs text-ios-secondary-text mt-0.5 whitespace-normal leading-tight">Push notification to maintain streaks</p>
+                    </div>
+                    <button
+                      onClick={toggleReminder}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${isReminderEnabled ? 'bg-black dark:bg-white' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-black transition-transform ${isReminderEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  
+                  {isReminderEnabled && (
+                    <div className="pt-3.5 border-t border-zinc-200 dark:border-zinc-800 mt-3">
+                      <label className="text-[10px] sm:text-xs font-medium text-black dark:text-white mb-3 block">Reminder Time</label>
+                      <input
+                        type="time"
+                        value={reminderTime}
+                        onChange={(e) => updateReminderTime(e.target.value)}
+                        className="w-full p-2.5 bg-white dark:bg-zinc-900 text-black dark:text-white border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white dark:[color-scheme:dark]"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Profile Picture setting block */}
+                {progress.photoURL && (
+                  <div className="p-3.5 sm:p-4 bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                    <div className="flex justify-between items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-xs sm:text-sm text-black dark:text-white truncate">Profile Avatar</h4>
+                        <p className="text-[10px] sm:text-xs text-ios-secondary-text mt-0.5 whitespace-normal leading-tight font-normal">Custom picture is active</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem("ai_study_companion_photo_url");
+                          setProgress(prev => ({ ...prev, photoURL: "" }));
+                          window.dispatchEvent(
+                            new CustomEvent("update-profile-photo", {
+                              detail: { photoURL: "" }
+                            })
+                          );
+                        }}
+                        className="flex items-center gap-1.5 p-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-transparent transition-all cursor-pointer shadow-sm text-xs font-bold"
+                        title="Reset avatar to default letter initials"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Reset</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Appearance / Theme setting block */}
+                <div className="p-3.5 sm:p-4 bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                  <div className="flex justify-between items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold text-xs sm:text-sm text-black dark:text-white truncate">Appearance</h4>
+                      <p className="text-[10px] sm:text-xs text-ios-secondary-text mt-0.5 whitespace-normal leading-tight font-normal">Switch color theme</p>
+                    </div>
+                    <button
+                      onClick={handleToggleTheme}
+                      className="flex items-center gap-1.5 p-2 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-850 transition-colors shadow-sm cursor-pointer"
+                      title="Toggle Theme"
+                    >
+                      {theme === "light" ? (
+                        <>
+                          <Moon className="w-3.5 h-3.5 text-zinc-650" />
+                          <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Dark</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sun className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-xs font-semibold text-zinc-200">Light</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
  
       {/* Main viewport Container */}
       <main className="w-full mx-auto px-3 sm:px-6 py-6 sm:py-8">
         
         {/* If background loading processing guide outlines */}
         {isGeneratingGuide && (
-          <div className="max-w-md mx-auto text-center py-20 bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-md">
-            {isQuotaQueue ? (
+          isQuotaQueue ? (
+            <div className="max-w-md mx-auto text-center py-20 bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-md">
               <>
                 <div className="relative w-16 h-16 mx-auto mb-6">
                   <span className="absolute inset-0 border-4 border-amber-500/15 rounded-full" />
@@ -1382,41 +2246,14 @@ export default function App() {
                   Cancel and go back
                 </button>
               </>
+            </div>
             ) : (
-              <>
-                <div className="relative w-16 h-16 mx-auto mb-6">
-                  <span className="absolute inset-0 border-4 border-brand-indigo/15 rounded-full" />
-                  <span className="absolute inset-0 border-4 border-brand-indigo rounded-full border-t-transparent animate-spin" />
-                  <Sparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-brand-indigo animate-pulse" />
-                </div>
-                <h3 className="text-xl font-black text-black dark:text-white">
-                  Synthesizing Study Outline...
-                </h3>
-                <p className="text-xs text-ios-secondary-text mt-1 max-w-sm mx-auto leading-relaxed">
-                  Applying advanced prompt-chain scaffolding to structured sections. Please wait while materials are formatted securely.
-                </p>
-     
-                <div className="mt-8 flex flex-col items-center gap-1 text-xs text-brand-indigo font-bold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo animate-bounce" />
-                  Processing document structure...
-                </div>
-
-                <div className="mt-8">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsGeneratingGuide(false);
-                      setIsQuotaQueue(false);
-                      setGenerationError("Document processing canceled by user.");
-                    }}
-                    className="px-6 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-ios-light dark:bg-ios-dark text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all text-xs font-bold"
-                  >
-                    Cancel / Go Back
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+            <GuideLoadingScreen onCancel={() => {
+              setIsGeneratingGuide(false);
+              setIsQuotaQueue(false);
+              setGenerationError("Document processing canceled by user.");
+            }} />
+          )
         )}
 
         {!isGeneratingGuide && (
@@ -1424,19 +2261,19 @@ export default function App() {
             
             {/* Display error message if guide generation failed */}
             {generationError && (
-              <div className="max-w-xl mx-auto p-4.5 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-2xl flex items-start gap-3 text-red-900 dark:text-red-300">
-                <XCircle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+              <div className="max-w-xl mx-auto p-4.5 bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl flex items-start gap-3 text-zinc-900 dark:text-zinc-100">
+                <XCircle className="w-5 h-5 shrink-0 text-zinc-500 mt-0.5" />
                 <div>
-                  <h4 className="text-xs font-bold">Tuning Failure Detected</h4>
-                  <p className="text-xxs text-red-700 dark:text-red-400 mt-1 leading-normal">
+                  <h4 className="text-xs font-bold">Notice</h4>
+                  <p className="text-xxs text-zinc-600 dark:text-zinc-400 mt-1 leading-normal">
                     {generationError}
                   </p>
                   <button
                     id="btn-dismiss-error"
                     onClick={() => setGenerationError(null)}
-                    className="mt-2 text-xxs font-black underline hover:text-red-600"
+                    className="mt-3 px-3 py-1.5 text-xs font-bold bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-600 transition-colors"
                   >
-                    Try another file
+                    Dismiss and try again
                   </button>
                 </div>
               </div>
@@ -1445,7 +2282,7 @@ export default function App() {
             {/* Hub view when guide is ready and mode hasn't been set yet */}
             {guideData && activeMode === "explore" && (
               <div id="mode-selection-hub" className="max-w-3xl mx-auto text-center py-6">
-                <span className="px-3 py-1 bg-brand-indigo/10 border border-brand-indigo/20 text-brand-indigo font-bold rounded-full text-xxs uppercase tracking-wider">
+                <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-900/60 text-zinc-900 dark:text-zinc-100 font-bold rounded-full text-xxs uppercase tracking-wider">
                   ✓ Document parsed: {fileName}
                 </span>
 
@@ -1463,22 +2300,22 @@ export default function App() {
                   <div
                     id="hub-btn-study-guide"
                     onClick={() => setActiveMode("guide")}
-                    className="bg-ios-light-secondary dark:bg-ios-dark-secondary border-2 border-zinc-200/80 dark:border-zinc-800 hover:border-brand-indigo dark:hover:border-brand-indigo p-6 rounded-3xl cursor-pointer hover:-translate-y-1 active:scale-98 transition-all flex flex-col justify-between group shadow-sm text-left"
+                    className="bg-ios-light-secondary dark:bg-ios-dark-secondary border-2 border-zinc-200/80 dark:border-zinc-800 hover:border-black dark:hover:border-white p-6 rounded-3xl cursor-pointer hover:-translate-y-1 active:scale-98 transition-all flex flex-col justify-between group shadow-sm text-left"
                   >
                     <div>
-                      <div className="w-11 h-11 rounded-2xl bg-brand-indigo/10 text-brand-indigo flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
+                      <div className="w-11 h-11 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
                         <BookOpen className="w-5.5 h-5.5" />
                       </div>
-                      <h4 className="text-base font-extrabold text-black dark:text-white group-hover:text-brand-indigo dark:group-hover:text-brand-indigo transition-colors">
+                      <h4 className="text-base font-extrabold text-black dark:text-white group-hover:text-zinc-950 dark:group-hover:text-zinc-50 transition-colors">
                         Structured Study Guide
                       </h4>
                       <p className="text-xs text-ios-secondary-text leading-relaxed mt-2">
                         Review the synthesized executive summary, structured section headers, core concepts, and dictionary word glossaries.
                       </p>
                     </div>
-                    <div className="mt-6 flex items-center gap-1.5 text-xs text-brand-indigo font-extrabold">
+                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold">
                       <span>Explore materials</span>
-                      <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                      <Sparkles className="w-3.5 h-3.5 animate-pulse text-zinc-500 dark:text-zinc-300" />
                     </div>
                   </div>
 
@@ -1486,22 +2323,22 @@ export default function App() {
                   <div
                     id="hub-btn-assessment"
                     onClick={() => setActiveMode("assessment")}
-                    className="bg-ios-light-secondary dark:bg-ios-dark-secondary border-2 border-zinc-200/80 dark:border-zinc-800 hover:border-brand-indigo dark:hover:border-brand-indigo p-6 rounded-3xl cursor-pointer hover:-translate-y-1 active:scale-98 transition-all flex flex-col justify-between group shadow-sm text-left"
+                    className="bg-ios-light-secondary dark:bg-ios-dark-secondary border-2 border-zinc-200/80 dark:border-zinc-800 hover:border-black dark:hover:border-white p-6 rounded-3xl cursor-pointer hover:-translate-y-1 active:scale-98 transition-all flex flex-col justify-between group shadow-sm text-left"
                   >
                     <div>
-                      <div className="w-11 h-11 rounded-2xl bg-brand-indigo/10 text-brand-indigo flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
+                      <div className="w-11 h-11 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
                         <Target className="w-5.5 h-5.5" />
                       </div>
-                      <h4 className="text-base font-extrabold text-black dark:text-white group-hover:text-brand-indigo dark:group-hover:text-brand-indigo transition-colors">
+                      <h4 className="text-base font-extrabold text-black dark:text-white group-hover:text-zinc-950 dark:group-hover:text-zinc-50 transition-colors">
                         Adaptive Assessments
                       </h4>
                       <p className="text-xs text-ios-secondary-text leading-relaxed mt-2">
                         Challenge your brain using progressive difficulty modes. Track scores with adaptive unlocks and level up!
                       </p>
                     </div>
-                    <div className="mt-6 flex items-center gap-1.5 text-xs text-brand-indigo font-extrabold">
+                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold">
                       <span>Begin Quizzes</span>
-                      <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                      <Sparkles className="w-3.5 h-3.5 animate-pulse text-zinc-500 dark:text-zinc-300" />
                     </div>
                   </div>
 
@@ -1509,22 +2346,22 @@ export default function App() {
                   <div
                     id="hub-btn-flashcards"
                     onClick={() => setActiveMode("flashcards")}
-                    className="bg-ios-light-secondary dark:bg-ios-dark-secondary border-2 border-zinc-200/80 dark:border-zinc-800 hover:border-brand-indigo dark:hover:border-brand-indigo p-6 rounded-3xl cursor-pointer hover:-translate-y-1 active:scale-98 transition-all flex flex-col justify-between group shadow-sm text-left"
+                    className="bg-ios-light-secondary dark:bg-ios-dark-secondary border-2 border-zinc-200/80 dark:border-zinc-800 hover:border-black dark:hover:border-white p-6 rounded-3xl cursor-pointer hover:-translate-y-1 active:scale-98 transition-all flex flex-col justify-between group shadow-sm text-left"
                   >
                     <div>
-                      <div className="w-11 h-11 rounded-2xl bg-brand-indigo/10 text-brand-indigo flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
+                      <div className="w-11 h-11 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 flex items-center justify-center font-bold text-lg mb-4 group-hover:scale-110 transition-transform">
                         <Shuffle className="w-5.5 h-5.5" />
                       </div>
-                      <h4 className="text-base font-extrabold text-black dark:text-white group-hover:text-brand-indigo dark:group-hover:text-brand-indigo transition-colors">
+                      <h4 className="text-base font-extrabold text-black dark:text-white group-hover:text-zinc-950 dark:group-hover:text-zinc-50 transition-colors">
                         Interactive Flashcards
                       </h4>
                       <p className="text-xs text-ios-secondary-text leading-relaxed mt-2">
                         Spin flippable memory modules containing key vocabulary words. Test direct recall with visual mastery feedback.
                       </p>
                     </div>
-                    <div className="mt-6 flex items-center gap-1.5 text-xs text-brand-indigo font-extrabold">
+                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold">
                       <span>Review cards</span>
-                      <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                      <Sparkles className="w-3.5 h-3.5 animate-pulse text-zinc-500 dark:text-zinc-300" />
                     </div>
                   </div>
 
@@ -1534,7 +2371,7 @@ export default function App() {
                   <button
                     id="btn-upload-alternate-document"
                     onClick={handleResetDocument}
-                    className="px-6 py-2.5 text-xs font-bold text-white bg-brand-indigo hover:opacity-90 shadow-md shadow-brand-indigo/20 rounded-xl transition-all border border-brand-indigo"
+                    className="px-6 py-2.5 text-xs font-bold text-white dark:text-black bg-black dark:bg-white hover:opacity-90 shadow-md rounded-xl transition-all border border-black dark:border-white"
                   >
                     Upload Another Document
                   </button>
@@ -1544,7 +2381,7 @@ export default function App() {
 
             {/* Render Views depending on state modes */}
             {activeMode === "upload" && (
-              <UploadView onFileLoaded={handleFileParsed} isLoading={isGeneratingGuide} />
+              <UploadView onFileLoaded={handleFileParsed} isLoading={isGeneratingGuide} user={user} />
             )}
 
             {activeMode === "guide" && guideData && (
@@ -1554,7 +2391,7 @@ export default function App() {
                   <button
                     id="btn-back-to-explore-guide"
                     onClick={() => setActiveMode("explore")}
-                    className="px-6 py-2.5 text-xs font-bold text-white bg-brand-indigo hover:opacity-90 shadow-md shadow-brand-indigo/20 rounded-xl transition-all border border-brand-indigo"
+                    className="px-6 py-2.5 text-xs font-bold text-white dark:text-black bg-black dark:bg-white hover:opacity-90 shadow-md rounded-xl transition-all border border-black dark:border-white"
                   >
                     ← Back to Subject Workspace Hub
                   </button>
@@ -1575,7 +2412,7 @@ export default function App() {
                   <button
                     id="btn-back-to-explore-quiz"
                     onClick={() => setActiveMode("explore")}
-                    className="px-6 py-2.5 text-xs font-bold text-white bg-brand-indigo hover:opacity-90 shadow-md shadow-brand-indigo/20 rounded-xl transition-all border border-brand-indigo"
+                    className="px-6 py-2.5 text-xs font-bold text-white dark:text-black bg-black dark:bg-white hover:opacity-90 shadow-md rounded-xl transition-all border border-black dark:border-white"
                   >
                     ← Back to Subject Workspace Hub
                   </button>
@@ -1590,7 +2427,7 @@ export default function App() {
                   <button
                     id="btn-back-to-explore-flashcards"
                     onClick={() => setActiveMode("explore")}
-                    className="px-6 py-2.5 text-xs font-bold text-white bg-brand-indigo hover:opacity-90 shadow-md shadow-brand-indigo/20 rounded-xl transition-all border border-brand-indigo"
+                    className="px-6 py-2.5 text-xs font-bold text-white dark:text-black bg-black dark:bg-white hover:opacity-90 shadow-md rounded-xl transition-all border border-black dark:border-white"
                   >
                     ← Back to Subject Workspace Hub
                   </button>
@@ -1632,13 +2469,14 @@ export default function App() {
                   dailyFocusGoalRounds={dailyFocusGoalRounds}
                   onSetDailyFocusGoalRounds={setDailyFocusGoalRounds}
                   onAddXp={(amount) => addXp(amount)}
+                  onUpdateProgress={syncProgress}
                 />
                 {guideData && (
                   <div className="mt-12 text-center pb-8">
                     <button
                       id="btn-back-to-explore-dashboard"
                       onClick={() => setActiveMode("explore")}
-                      className="px-6 py-2.5 text-xs font-bold text-white bg-brand-indigo hover:opacity-90 shadow-md shadow-brand-indigo/20 rounded-xl transition-all border border-brand-indigo"
+                      className="px-6 py-2.5 text-xs font-bold text-white dark:text-black bg-black dark:bg-white hover:opacity-90 shadow-md rounded-xl transition-all border border-black dark:border-white"
                     >
                       ← Back to Subject Workspace Hub
                     </button>
@@ -1653,12 +2491,13 @@ export default function App() {
       </main>
 
       {/* Styled academic Footer footer */}
-      <footer className="mt-20 border-t border-zinc-200/60 dark:border-zinc-900 pb-10 pt-6 text-center text-zinc-400 text-xxs font-medium tracking-normal container mx-auto">
-        <p>© 2026 AI Study Companion. Developed by Mark Welly Pardillo by the help of Google AI Studio.</p>
+      <footer className="mt-20 border-t lg:border-t-0 border-zinc-200/60 dark:border-zinc-900 pb-10 pt-6 text-center text-zinc-400 text-xxs font-medium tracking-normal container mx-auto">
+        <p>© 2026 AI Study Companion. Developed by Mark Welly Pardillo.</p>
       </footer>
 
       {/* Floating iPhone-style Dynamic Island Notification & Companion System */}
       <DynamicIsland
+        sidebarCollapsed={isSidebarCollapsed}
         timerIsRunning={timerIsRunning}
         timeLeft={timeLeft}
         timerMode={timerMode}
@@ -1682,6 +2521,7 @@ export default function App() {
 
       {/* Floating Notepad / Scratchpad */}
       <FloatingNotepad />
+      </div>
     </div>
   );
 }

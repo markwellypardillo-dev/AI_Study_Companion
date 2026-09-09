@@ -12,6 +12,7 @@
         "totalFocusSeconds": { "type": "number" },
         "dailyStreak": { "type": "number" },
         "lastActiveDate": { "type": "string" },
+        "photoURL": { "type": "string" },
         "unlockedFeatures": {
           "type": "array",
           "items": { "type": "string" }
