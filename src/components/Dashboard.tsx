@@ -369,7 +369,7 @@ export default function Dashboard({
         
         <div className={`lg:col-span-5 flex flex-col order-2 ${activeTab === 'overview' ? 'flex' : 'hidden'}`}>
         {/* Daily Study Target */}
-        <div className="bg-ios-light-secondary h-full w-full dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-5 justify-between select-none">
+        <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-3xl p-5 sm:p-6 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col md:flex-row items-start md:items-center gap-5 justify-between select-none before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none h-full w-full">
           <div className="flex items-center gap-4.5 min-w-0 flex-1 w-full">
             {/* SVG Progress Circle Dial */}
             <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center shrink-0">
@@ -416,7 +416,7 @@ export default function Dashboard({
           </div>
 
           {/* Stepper Controllers */}
-          <div className="flex items-center justify-between gap-5 bg-ios-light-bg dark:bg-ios-dark-bg px-4 py-2.5 rounded-2xl border border-zinc-200/50 dark:border-zinc-950 w-full md:w-auto shrink-0 uppercase font-bold text-[10px]">
+          <div className="flex items-center justify-between gap-5 bg-white dark:bg-zinc-900 px-4 py-2.5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] border-none w-full md:w-auto shrink-0 uppercase font-bold text-[10px]">
             <span className="text-ios-secondary-text tracking-wide font-sans md:hidden">Goal target:</span>
             <div className="flex items-center gap-3 font-sans w-full md:w-auto justify-end md:justify-center">
               <button
@@ -462,7 +462,7 @@ export default function Dashboard({
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           
           {/* Stats 1: Streak */}
-          <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4">
+          <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-2xl p-3.5 sm:p-5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
             <div className="p-2 sm:p-3 bg-red-500/10 dark:bg-red-950/40 rounded-xl shrink-0">
               <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 fill-red-500" />
             </div>
@@ -475,7 +475,7 @@ export default function Dashboard({
           </div>
 
           {/* Stats 2: Focus Hours */}
-          <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4">
+          <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-2xl p-3.5 sm:p-5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
             <div className="p-2 sm:p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl shrink-0">
               <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-950 dark:text-zinc-50" />
             </div>
@@ -488,7 +488,7 @@ export default function Dashboard({
           </div>
 
           {/* Stats 3: Academic Mastery % */}
-          <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4">
+          <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-2xl p-3.5 sm:p-5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
             <div className="p-2 sm:p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl shrink-0">
               <Target className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-950 dark:text-zinc-50" />
             </div>
@@ -501,7 +501,7 @@ export default function Dashboard({
           </div>
 
           {/* Stats 4: Mastered Terms */}
-          <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4">
+          <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-2xl p-3.5 sm:p-5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
             <div className="p-2 sm:p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl shrink-0">
               <Award className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-950 dark:text-zinc-50" />
             </div>
@@ -536,7 +536,7 @@ export default function Dashboard({
         <StudyLounge user={user} />
         
         <div className="h-6 lg:hidden"></div>
-        <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-3xl p-6 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] space-y-4 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4.5 h-4.5 text-zinc-950 dark:text-zinc-50" />
@@ -569,14 +569,14 @@ export default function Dashboard({
               How this works
             </button>
             {showGridHelp && (
-              <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-normal font-medium animate-in fade-in slide-in-from-top-1 duration-200 bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+              <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-normal font-medium animate-in fade-in slide-in-from-top-1 duration-200 bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none">
                 Every logged Pomodoro round, completed quiz, or reflection journal entry builds your daily learning streak! 
                 <strong className="text-zinc-950 dark:text-zinc-50 ml-1 font-semibold">💡 Click any grid square</strong> to toggle a &quot;Simulated Completed Study Session&quot; for that day and watch your analytics grow!
               </p>
             )}
           </div>
 
-          <div className="border border-zinc-200/50 dark:border-zinc-900/60 p-4.5 rounded-2xl bg-ios-light-bg dark:bg-ios-dark-bg space-y-3">
+          <div className="shadow-[0_4px_16px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)] border-none p-4.5 rounded-2xl bg-white dark:bg-zinc-900 space-y-3">
             {/* Layout combining Weekdays left + Scrolling Grid (with Month headers built-in) right */}
             <div className="flex items-start">
               {/* Vertical list of weekday tags */}
@@ -648,7 +648,7 @@ export default function Dashboard({
                             title={`${formattedDate}: ${count} study sessions`}
                           />
                           {/* Tooltip content nested inside */}
-                           <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center z-30 min-w-[180px] bg-zinc-950/95 dark:bg-neutral-900 border border-zinc-800 rounded-xl px-2.5 py-1.5 shadow-xl text-[9px] leading-relaxed text-center text-white font-sans">
+                           <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center z-30 min-w-[180px] bg-zinc-950/95 dark:bg-neutral-900 border-none rounded-xl px-2.5 py-1.5 shadow-xl text-[9px] leading-relaxed text-center text-white font-sans">
                             <strong className="font-sans font-extrabold block text-white/95">{formattedDate}</strong>
                             <span className="text-zinc-300 font-medium block mt-0.5">
                               {count === 0 ? "No study activities completed" : `${count} study sessions completed`}
@@ -691,7 +691,7 @@ export default function Dashboard({
         </div>
         <div className={`lg:col-span-4 flex flex-col order-5 ${activeTab === 'analytics' ? 'flex' : 'hidden'}`}>
         {/* Quiz Grade History Logs */}
-        <div className="bg-ios-light-secondary h-full w-full dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
+        <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-3xl p-6 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] h-full w-full before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-4.5 h-4.5 text-zinc-950 dark:text-zinc-50" />
             <h3 className="font-extrabold text-[13px] sm:text-sm text-zinc-950 dark:text-white leading-tight">Academic Assessment History</h3>
@@ -702,7 +702,7 @@ export default function Dashboard({
               {progress.quizHistory.map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-center justify-between p-3.5 bg-ios-light-bg dark:bg-ios-dark-bg rounded-xl border border-zinc-200/50 dark:border-zinc-900/50"
+                  className="flex items-center justify-between p-3.5 bg-white dark:bg-zinc-900 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none"
                 >
                   <div>
                     <h4 className="text-xs font-extrabold text-black dark:text-white line-clamp-1">
@@ -725,7 +725,7 @@ export default function Dashboard({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-ios-secondary-text text-xs font-medium border border-dashed border-zinc-300 dark:border-zinc-800 rounded-2xl">
+            <div className="text-center py-8 bg-white dark:bg-zinc-900 text-ios-secondary-text text-xs font-medium shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none rounded-2xl">
               No quiz records available. Run an assessment to save statistics.
             </div>
           )}
@@ -736,7 +736,7 @@ export default function Dashboard({
         {/* JOURNAL CONTENT */}
         <div className={`lg:col-span-8 flex flex-col order-1 ${activeTab === 'journal' ? 'flex' : 'hidden'}`}>
         {/* Dynamic Study Journal Notebook */}
-        <div id="reflection-journal-section" className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+        <div id="reflection-journal-section" className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-3xl p-6 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] space-y-4 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
               <PenTool className="w-4 h-4 text-zinc-950 dark:text-zinc-50" />
@@ -753,13 +753,13 @@ export default function Dashboard({
               Why keep a journal?
             </button>
             {showJournalHelp && (
-              <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-relaxed font-sans animate-in fade-in slide-in-from-top-1 duration-200 bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+              <p className="text-[11px] sm:text-xs text-ios-secondary-text leading-relaxed font-sans animate-in fade-in slide-in-from-top-1 duration-200 bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none">
                 Solidify what you studied! Active cognitive retrieval—like reflecting on your completed Pomodoro intervals—multiplies conceptual memory recall.
               </p>
             )}
           </div>
 
-          <form onSubmit={handleAddJournalEntry} className="space-y-4 bg-ios-light-bg dark:bg-ios-dark-bg p-4 sm:p-5 rounded-2xl border border-zinc-200/50 dark:border-zinc-950">
+          <form onSubmit={handleAddJournalEntry} className="space-y-4 bg-white dark:bg-zinc-900 p-4 sm:p-5 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)] border-none">
             <div className="space-y-1.5">
               <label htmlFor="journal-note-textarea" className="text-[10px] font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-wider block font-sans">
                 💡 Lesson Notes & Key Realizations
@@ -770,7 +770,7 @@ export default function Dashboard({
                 onChange={(e) => setNewJournalNote(e.target.value)}
                 placeholder="What formulas, vocabulary, or systems did you commit to memory? (e.g., Reviewed mitochondria electron transfer chains...)"
                 rows={3}
-                className="w-full text-xs p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black/25 dark:focus:ring-white/25 focus:border-black dark:focus:border-white outline-none placeholder:text-zinc-400 select-text font-medium min-h-[90px] resize-none leading-relaxed transition-all duration-250"
+                className="w-full text-xs p-3 rounded-xl shadow-inner dark:shadow-none bg-zinc-50 dark:bg-zinc-950/50 border-none text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black/25 dark:focus:ring-white/25 focus:border-black dark:focus:border-white outline-none placeholder:text-zinc-400 select-text font-medium min-h-[90px] resize-none leading-relaxed transition-all duration-250"
               />
             </div>
 
@@ -786,10 +786,10 @@ export default function Dashboard({
                       key={mins}
                       type="button"
                       onClick={() => setActiveSessionMinutes(mins)}
-                      className={`py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center border font-sans ${
+                      className={`py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center shadow-sm font-sans ${
                         isActive
-                          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-[1.02]"
-                          : "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-850 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:text-black dark:hover:text-white"
+                          ? "bg-black dark:bg-white text-white dark:text-black shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-[1.02]"
+                          : "bg-white dark:bg-zinc-900 border-transparent text-zinc-650 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white"
                       }`}
                     >
                       {mins === 0 ? "No Time" : `${mins} min`}
@@ -815,10 +815,10 @@ export default function Dashboard({
                       key={m}
                       type="button"
                       onClick={() => setNewJournalMood(m)}
-                      className={`py-2 rounded-xl text-xs font-black transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 border font-sans ${
+                      className={`py-2 rounded-xl text-xs font-black transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 shadow-sm font-sans ${
                         isActive
-                          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-[1.02]"
-                          : "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-850 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:text-black dark:hover:text-white"
+                          ? "bg-black dark:bg-white text-white dark:text-black shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-[1.02]"
+                          : "bg-white dark:bg-zinc-900 border-transparent text-zinc-650 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white"
                       }`}
                     >
                       <span className="text-xs sm:text-sm">{emoji}</span>
@@ -847,7 +847,7 @@ export default function Dashboard({
               {journalEntries.map((item) => (
                 <div
                   key={item.id}
-                  className="p-3 bg-ios-light-bg dark:bg-ios-dark-bg rounded-xl border border-zinc-200/40 dark:border-zinc-900/40 space-y-1.5 relative group"
+                  className="p-3 bg-white dark:bg-zinc-900 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none space-y-1.5 relative group"
                 >
                   <button
                     type="button"
@@ -874,7 +874,7 @@ export default function Dashboard({
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 text-ios-secondary-text text-xxs font-medium border border-dashed border-zinc-300 dark:border-zinc-805 rounded-2xl">
+            <div className="text-center py-6 bg-white dark:bg-zinc-900 text-ios-secondary-text text-xxs font-medium shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none rounded-2xl">
               No reflection journals logged yet. Wrap up your study session by logging notes above!
             </div>
           )}
@@ -941,7 +941,7 @@ export default function Dashboard({
             Quiz Tips
           </button>
           {showQuizHelp && (
-            <div className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl p-4.5 flex gap-3 text-zinc-900 dark:text-zinc-100 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="bg-white dark:bg-zinc-800 shadow-[0_4px_16px_rgba(0,0,0,0.08)] border-none rounded-2xl p-4.5 flex gap-3 text-zinc-900 dark:text-zinc-100 animate-in fade-in slide-in-from-top-1 duration-200">
               <Target className="w-5 h-5 shrink-0 text-zinc-950 dark:text-zinc-50 mt-0.5" />
               <div>
                 <h4 className="text-xs font-black">Ready to ace a Hard quiz?</h4>

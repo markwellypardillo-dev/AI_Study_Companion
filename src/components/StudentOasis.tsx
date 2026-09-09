@@ -482,7 +482,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
   };
 
   return (
-    <div className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 shadow-sm space-y-4">
+    <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-3xl p-5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] space-y-4 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
       {/* Title block with sparkles */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-zinc-200/50 dark:border-zinc-800/40 pb-3">
         {/* Left column - Oasis Pill */}
@@ -508,7 +508,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
       </div>
 
       {/* Tabs list inside local row */}
-      <div className="grid grid-cols-3 gap-1 p-1 bg-ios-light-bg dark:bg-ios-dark-bg border border-zinc-200/50 dark:border-zinc-950 rounded-xl">
+      <div className="grid grid-cols-3 gap-1 p-1 bg-white/50 dark:bg-zinc-900/50 shadow-inner rounded-xl border-none">
         <button
           onClick={() => setActiveTab("garden")}
           className={`py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all uppercase flex items-center justify-center gap-1 ${
@@ -546,7 +546,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
       {/* Tab 1: Sprout Garden */}
       {activeTab === "garden" && (
         <div className="space-y-4">
-          <div className="flex flex-col items-center justify-center bg-ios-light-bg dark:bg-zinc-950 p-4.5 rounded-2xl border border-zinc-200/50 dark:border-zinc-900/60 relative overflow-hidden group min-h-[170px]">
+          <div className="flex flex-col items-center justify-center bg-white dark:bg-zinc-900 p-4.5 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none relative overflow-hidden group min-h-[170px]">
             {/* Visual Sparkle decoration */}
             <span className="absolute top-2.5 right-2.5 text-xs text-amber-400 group-hover:scale-125 transition-transform animate-pulse">✨</span>
 
@@ -682,7 +682,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
 
       {/* Tab 2: Synthesizer Space */}
       {activeTab === "synth" && (
-        <div className="space-y-4 bg-ios-light-bg dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-900/60 font-sans">
+        <div className="space-y-4 bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.05)] border-none font-sans">
           
           <div className="flex items-center justify-between pb-2 border-b border-zinc-200/40 dark:border-zinc-900/40">
             <div>
@@ -693,10 +693,10 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             {/* Main Synth trigger */}
             <button
               onClick={toggleSynthMute}
-              className={`p-2 rounded-xl transition-all border flex items-center justify-center gap-1.5 font-bold text-xs ${
+              className={`p-2 rounded-xl transition-all shadow-sm border-none flex items-center justify-center gap-1.5 font-bold text-xs ${
                 synthRunning
                   ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
-                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-650 hover:bg-zinc-100"
+                  : "bg-white dark:bg-zinc-900 text-zinc-650 hover:bg-zinc-50 dark:hover:bg-zinc-800"
               }`}
             >
               {synthRunning ? (
@@ -716,10 +716,10 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             {/* Wave 1: Brain stimulation */}
             <button
               onClick={() => handleSelectSoundType("binaural")}
-              className={`w-full p-2.5 rounded-xl border text-left transition-all ${
+              className={`w-full p-2.5 rounded-xl shadow-sm border-none text-left transition-all ${
                 synthSound === "binaural"
                   ? "border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white"
-                  : "border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-90 w-full"
+                  : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 w-full"
               }`}
             >
               <div className="flex justify-between items-center">
@@ -734,10 +734,10 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             {/* Wave 2: Rain cracking noise */}
             <button
               onClick={() => handleSelectSoundType("pink_rain")}
-              className={`w-full p-2.5 rounded-xl border text-left transition-all ${
+              className={`w-full p-2.5 rounded-xl shadow-sm border-none text-left transition-all ${
                 synthSound === "pink_rain"
                   ? "border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white"
-                  : "border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-90 w-full"
+                  : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 w-full"
               }`}
             >
               <div className="flex justify-between items-center">
@@ -752,10 +752,10 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
             {/* Wave 3: Space Drone */}
             <button
               onClick={() => handleSelectSoundType("cosmic_drone")}
-              className={`w-full p-2.5 rounded-xl border text-left transition-all ${
+              className={`w-full p-2.5 rounded-xl shadow-sm border-none text-left transition-all ${
                 synthSound === "cosmic_drone"
                   ? "border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white"
-                  : "border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-90 w-full"
+                  : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 w-full"
               }`}
             >
               <div className="flex justify-between items-center">

@@ -138,7 +138,7 @@ export default function FocusMusicPlayer({
   };
 
   return (
-    <div id="focus-music-card" className="bg-ios-light-secondary dark:bg-ios-dark-secondary border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm transition-all duration-300">
+    <div id="focus-music-card" className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border-none rounded-3xl p-6 transition-all duration-300 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
       
       <div className="flex items-center justify-between mb-4 border-b border-zinc-200/50 dark:border-zinc-800 pb-3">
         <h4 className="text-xs font-black text-black dark:text-white flex items-center gap-1.5 uppercase tracking-wider">
@@ -150,10 +150,10 @@ export default function FocusMusicPlayer({
           {/* Keyboard shortcuts tracker */}
           <button
             onClick={() => setShowHotkeysGuide(!showHotkeysGuide)}
-            className={`p-1.5 rounded-lg transition-all border cursor-pointer relative z-10 ${
+            className={`p-1.5 rounded-lg transition-all shadow-sm border-none cursor-pointer relative z-10 ${
               showHotkeysGuide
                 ? "bg-zinc-150 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
-                : "text-ios-secondary-text hover:text-black dark:hover:text-white border-transparent"
+                : "text-ios-secondary-text hover:text-black dark:hover:text-white shadow-none bg-transparent"
             }`}
             title="Interactive tactile hotkeys desk"
           >
@@ -166,10 +166,10 @@ export default function FocusMusicPlayer({
               setShowHostingGuide(!showHostingGuide);
               setShowHotkeysGuide(false);
             }}
-            className={`p-1.5 rounded-lg transition-all border cursor-pointer relative z-10 ${
+            className={`p-1.5 rounded-lg transition-all shadow-sm border-none cursor-pointer relative z-10 ${
               showHostingGuide
                 ? "bg-zinc-150 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
-                : "text-ios-secondary-text hover:text-black dark:hover:text-white border-transparent"
+                : "text-ios-secondary-text hover:text-black dark:hover:text-white shadow-none bg-transparent"
             }`}
             title="How to get free links guide"
           >
@@ -310,7 +310,7 @@ export default function FocusMusicPlayer({
         </p>
 
         {synthType && (
-          <span className="absolute top-2 right-2 text-[8px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-bold">
+          <span className="absolute top-2 right-2 text-[8px] font-mono bg-white dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-[0_2px_8px_rgba(16,185,129,0.15)] dark:shadow-none border-none px-1.5 py-0.5 rounded-full font-bold">
             ⚡ Web-Synth Live
           </span>
         )}
@@ -383,10 +383,10 @@ export default function FocusMusicPlayer({
             <div
               key={track.id}
               onClick={() => onSelectTrack(track.id)}
-              className={`flex items-center justify-between p-2.5 rounded-xl text-xs cursor-pointer border select-none transition-all ${
+              className={`flex items-center justify-between p-2.5 rounded-xl text-xs cursor-pointer shadow-sm border-none select-none transition-all ${
                 selectedTrackId === track.id
                   ? "bg-zinc-100 dark:bg-zinc-800 border-black dark:border-white text-zinc-900 dark:text-zinc-100 font-black"
-                  : "bg-ios-light-bg hover:bg-zinc-100/80 dark:bg-ios-dark-bg dark:hover:bg-zinc-900/80 border-zinc-200/50 dark:border-zinc-900 text-black dark:text-zinc-300"
+                  : "bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-black dark:text-zinc-300"
               }`}
             >
               <div className="flex items-center gap-2 overflow-hidden font-sans">
@@ -483,10 +483,10 @@ export default function FocusMusicPlayer({
                 key={mins === null ? "off" : mins}
                 type="button"
                 onClick={() => onSetSleepTimerMinutes(mins)}
-                className={`px-2.5 py-1 text-xxs font-black rounded-lg transition-all border ${
+                className={`px-2.5 py-1 text-xxs font-black rounded-lg transition-all shadow-sm border-none ${
                   sleepTimerMinutes === mins
                     ? "bg-black dark:bg-white border-black dark:border-white text-white dark:text-black shadow-sm"
-                    : "bg-ios-light-bg dark:bg-ios-dark-bg border-zinc-200/50 dark:border-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100"
+                    : "bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 }`}
               >
                 {mins === null ? "Off" : `${mins}m`}

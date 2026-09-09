@@ -207,7 +207,7 @@ export default function StudyLounge({ user }: { user?: any }) {
       {/* Title Header */}
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-1.5">
-          <div className="p-0.5 px-2 bg-zinc-200/50 dark:bg-zinc-800/80 backdrop-blur-md text-zinc-900 dark:text-zinc-100 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 font-sans border border-zinc-300 dark:border-zinc-700">
+          <div className="p-0.5 px-2 bg-white dark:bg-zinc-800 backdrop-blur-md text-zinc-900 dark:text-zinc-100 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 font-sans shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-none border-none">
             <Users className="w-3 h-3" /> Live Study Lounge
           </div>
           {isConnected ? (
@@ -216,7 +216,7 @@ export default function StudyLounge({ user }: { user?: any }) {
              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Reconnecting..." />
           )}
         </div>
-        <span className="text-[9px] font-mono text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider backdrop-blur bg-white/30 dark:bg-black/30 px-2 py-0.5 rounded-full border border-white/20 dark:border-white/10">
+        <span className="text-[9px] font-mono text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider backdrop-blur bg-white dark:bg-zinc-800/80 px-2 py-0.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none">
           {activeCount} Peers
         </span>
       </div>
@@ -406,7 +406,7 @@ export default function StudyLounge({ user }: { user?: any }) {
       </div>
 
       {/* Group dynamic stats */}
-      <div className="relative z-10 bg-zinc-50 dark:bg-zinc-900 rounded-xl p-2.5 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-[10px] font-sans backdrop-blur-md">
+      <div className="relative z-10 bg-white dark:bg-zinc-900 rounded-xl p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none flex items-center justify-between text-[10px] font-sans backdrop-blur-md">
         <span className="text-zinc-900 dark:text-zinc-100 font-bold flex items-center gap-1.5 shrink-0 drop-shadow-sm">
           <GraduationCap className="w-3.5 h-3.5" /> Study Spark Active
         </span>
