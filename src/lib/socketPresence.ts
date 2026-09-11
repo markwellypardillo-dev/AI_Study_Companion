@@ -1,3 +1,4 @@
+import { getCustomUser } from './customAuth';
 import { io, Socket } from "socket.io-client";
 import { auth } from "./firebase";
 
@@ -104,8 +105,9 @@ export const getDeviceId = () => {
 };
 
 export const getClientUid = () => {
-  if (auth.currentUser) {
-    return auth.currentUser.uid;
+  const currentUser = auth.currentUser || getCustomUser();
+  if (currentUser) {
+    return currentUser.uid;
   }
   let cached = localStorage.getItem("ai_study_companion_client_uid");
   if (!cached) {
@@ -120,7 +122,7 @@ export const getUserIdentity = (user?: any) => {
   let isManual = localStorage.getItem("ai_study_companion_identity_is_manual") === "true";
   
   if (user && !isManual) {
-    const derivedName = user.displayName || user.email?.split('@')[0];
+    const derivedName = user.username || user.displayName || user.email?.split('@')[0];
     if (derivedName) {
       localStorage.setItem("ai_study_companion_user_identity", derivedName);
       return derivedName;

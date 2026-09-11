@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { auth, logout, db } from "./lib/firebase";
 import { loadProgressFromFirestore, saveProgressToFirestore, logGlobalActivity, logGuestLogin, subscribeToMaintenanceMode, checkIfBanned } from "./lib/db";
 import { onAuthStateChanged } from "firebase/auth";
+import { getCustomUser, customSignOut } from "./lib/customAuth";
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy } from "firebase/firestore";
 import { LoginView } from "./components/LoginView";
 
-const logoUrl = "https://i.postimg.cc/ht4X0Tbj/LOGO-for-Ai-companion.png";
+import logoUrl from "./assets/images/app_logo.png";
 import {
   ChevronDown,
   ChevronLeft,
@@ -84,6 +85,8 @@ import Dashboard from "./components/Dashboard";
 import DynamicIsland from "./components/DynamicIsland";
 import FloatingNotepad from "./components/FloatingNotepad";
 import WelcomeTour from "./components/WelcomeTour";
+import { PWAInstallButton } from "./components/PWAInstallButton";
+import { OfflineIndicator } from "./components/OfflineIndicator";
 import { triggerConfettiWithSound as confetti, playNotificationSound } from "./lib/sounds";
 import { PRELOADED_SUBJECTS } from "./data/preloadedSubjects";
 import ReactPlayer from "react-player";
@@ -245,6 +248,29 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Check for custom local user first
+    const customUser = getCustomUser();
+    if (customUser) {
+      setUser(customUser);
+      setIsGuestMode(false);
+      loadProgressFromFirestore().then(storedProgress => {
+        const photo = localStorage.getItem("ai_study_companion_photo_url") || (storedProgress && storedProgress.photoURL) || "";
+        if (storedProgress) {
+          setProgress(prev => ({
+            ...prev,
+            ...storedProgress,
+            photoURL: photo || storedProgress.photoURL || prev.photoURL || ""
+          }));
+        } else {
+          if (photo) {
+            setProgress(prev => ({ ...prev, photoURL: photo }));
+          }
+        }
+        setAuthInitialized(true);
+      });
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         const isBanned = await checkIfBanned(currentUser.uid);
@@ -604,7 +630,7 @@ export default function App() {
               )}
               <div className="min-w-0 flex-1 text-left">
                 <p className="text-xs font-bold text-black dark:text-white truncate">
-                  {isGuestMode ? "Guest User" : user?.email || "User"}
+                  {isGuestMode ? "Guest User" : user?.username || user?.displayName || user?.email || "User"}
                 </p>
                 <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium truncate">
                   {isGuestMode ? "Limited Session" : "Premium Member"}
@@ -882,8 +908,8 @@ export default function App() {
     if (typeof window !== "undefined") {
       const audio = new Audio();
       audio.loop = true;
-      audio.onplay = () => setMusicIsPlaying(true);
-      audio.onpause = () => setMusicIsPlaying(false);
+      // audio.onplay = () => setMusicIsPlaying(true);
+      // audio.onpause = () => setMusicIsPlaying(false);
       audio.onerror = () => {
         if (musicIsPlaying) {
           setMusicError("Error loading streaming source. CORS blockage or broken link.");
@@ -1780,6 +1806,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      customSignOut();
       await logout();
     } catch (e) {
       console.error(e);
@@ -1878,31 +1905,29 @@ export default function App() {
   return (
     <div className="min-h-dvh bg-ios-light-bg dark:bg-ios-dark-bg font-sans text-black dark:text-white selection:bg-zinc-200 dark:selection:bg-zinc-800 transition-colors duration-300 flex">
       <WelcomeTour />
-      <div style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '200px', height: '200px', pointerEvents: 'none', zIndex: -10, display: isYoutubeTrack ? 'block' : 'none' }}>
+      <OfflineIndicator />
+      <div style={{ position: 'fixed', bottom: '0px', right: '0px', width: '1px', height: '1px', overflow: 'hidden', pointerEvents: 'none', zIndex: -10, opacity: 0.01 }}>
         <ReactPlayer 
           url={currentTrack?.type === 'youtube' ? currentTrack.src : "https://www.youtube.com/watch?v=dQw4w9WgXcQ"} 
           playing={isYoutubeTrack && musicIsPlaying} 
           volume={musicIsMuted ? 0 : musicVolume}
-          onPlay={() => {
-            if (isYoutubeTrack) setMusicIsPlaying(true);
-          }}
-          onPause={() => {
-            if (isYoutubeTrack) setMusicIsPlaying(false);
-          }}
+          // onPlay={() => {}}
+          // onPause={() => {}}
           onEnded={() => {
             if (isYoutubeTrack) setMusicIsPlaying(false);
           }}
           onError={(e) => {
             if (isYoutubeTrack) {
-              console.error("YouTube Player Error:", e);
-              setMusicError("Unable to play YouTube track.");
+              console.warn("YouTube Player Error:", e);
+              // setMusicError("Unable to play YouTube track.");
               setMusicIsPlaying(false);
             }
           }}
-          width="200px"
-          height="200px"
+          width="10px"
+          height="10px"
           config={{
             youtube: {
+               // @ts-ignore
               playerVars: { 
                 autoplay: 0, 
                 playsinline: 1,
@@ -2040,6 +2065,7 @@ export default function App() {
  
         {/* Gamified Core Status widgets inside bar */}
         <div className="flex items-center gap-2 sm:gap-4">
+          <PWAInstallButton />
 
  
 

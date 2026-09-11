@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+async function run() {
+  const config = await fetch('./firebase-applet-config.json').then(r => r.json());
+  const app = initializeApp(config);
+  const db = getFirestore(app, config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)" ? config.firestoreDatabaseId : undefined);
+  try {
+    const snap = await getDocs(collection(db, "users"));
+    console.log("Found users:", snap.docs.map(d => ({id: d.id, ...d.data()})));
+  } catch(e) {
+    console.error(e);
+  }
+}
+run();
+</script>
+</body>
+</html>

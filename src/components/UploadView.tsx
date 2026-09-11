@@ -1,6 +1,5 @@
 import { useState, useRef, DragEvent, ChangeEvent, useEffect, useMemo } from "react";
-import { UploadCloud, FileText, CheckCircle2, AlertTriangle, Play, Sparkles, ChevronDown, HardDrive } from "lucide-react";
-import { OfficeParser } from "officeparser";
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, AlertTriangle, Play, Sparkles, ChevronDown, HardDrive } from "lucide-react";
 import { PRELOADED_SUBJECTS } from "../data/preloadedSubjects";
 import GoogleDrivePicker from "./GoogleDrivePicker";
 
@@ -142,11 +141,12 @@ export default function UploadView({ onFileLoaded, isLoading, user }: UploadView
           } else if (["png", "jpg", "jpeg", "webp", "pdf"].includes(extension || "")) {
             throw new Error("Image/PDF parsing requires server-side Gemini processing to read photos.");
           } else {
-            const ast = await OfficeParser.parseOffice(uint8Array, {
-              pdfWorkerSrc: "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.worker.min.mjs"
-            });
-            const textResult = await ast.to("text");
-            extractedText = textResult.value || "";
+            throw new Error("Office parsing requires server-side processing.");
+            // const ast = await OfficeParser.parseOffice(uint8Array, {
+              // pdfWorkerSrc: "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.worker.min.mjs"
+            // });
+            // const textResult = await ast.to("text");
+            // extractedText = textResult.value || "";
           }
           parsedSuccessfully = true;
           console.log(`[Client Parser] Extracted ${extractedText.length} characters successfully!`);

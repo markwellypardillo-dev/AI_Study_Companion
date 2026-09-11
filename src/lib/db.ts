@@ -1,3 +1,4 @@
+import { getCustomUser } from './customAuth';
 import { db, auth, handleFirestoreError, OperationType } from "./firebase";
 import { doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, serverTimestamp, getCountFromServer } from "firebase/firestore";
 import { UserProgress } from "../types";
@@ -102,10 +103,13 @@ export const updateUserProgressRemote = async (userId: string, updates: Partial<
 export const logGlobalActivity = async (action: string, metadata: any = {}) => {
   let userId = "guest";
   let email = "Guest User";
+  let username = "Guest User";
   
-  if (auth.currentUser) {
-    userId = auth.currentUser.uid;
-    email = auth.currentUser.email || "";
+  const currentUser = auth.currentUser || getCustomUser();
+  if (currentUser) {
+    userId = currentUser.uid;
+    email = currentUser.email || "";
+    username = currentUser.username || currentUser.displayName || currentUser.email?.split('@')[0] || "";
   } else if (!metadata.isGuest) {
     // If not authenticated and not explicitly a guest action, we might skip, but let's allow explicit guests.
     if (action !== "login" && action !== "guest_login") {
@@ -116,6 +120,7 @@ export const logGlobalActivity = async (action: string, metadata: any = {}) => {
   if (metadata.isGuest) {
     userId = metadata.guestId || "guest";
     email = metadata.guestName || "Guest User";
+    username = metadata.guestName || "Guest User";
   }
 
   try {
@@ -123,6 +128,7 @@ export const logGlobalActivity = async (action: string, metadata: any = {}) => {
     await setDoc(actRef, {
       userId,
       email,
+      username,
       action,
       metadata,
       timestamp: serverTimestamp()
@@ -189,14 +195,16 @@ export const subscribeToGlobalActivities = (setActivities: (acts: any[]) => void
 };
 
 export const saveProgressToFirestore = async (progress: UserProgress) => {
-  if (!auth.currentUser) return;
-  const userId = auth.currentUser.uid;
+  const currentUser = auth.currentUser || getCustomUser();
+  if (!currentUser) return;
+  const userId = currentUser.uid;
   const userRef = doc(db, "users", userId);
   try {
     // Only save the non-collection properties
     const data = {
       uid: userId,
-      email: auth.currentUser.email || "",
+      email: currentUser.email || "",
+      username: currentUser.username || currentUser.displayName || currentUser.email?.split('@')[0] || "",
       level: progress.level || 1,
       xp: progress.xp || 0,
       xpToNextLevel: progress.xpToNextLevel || 100,
@@ -216,8 +224,9 @@ export const saveProgressToFirestore = async (progress: UserProgress) => {
 };
 
 export const loadProgressFromFirestore = async (): Promise<Partial<UserProgress> | null> => {
-  if (!auth.currentUser) return null;
-  const userId = auth.currentUser.uid;
+  const currentUser = auth.currentUser || getCustomUser();
+  if (!currentUser) return null;
+  const userId = currentUser.uid;
   const userRef = doc(db, "users", userId);
   try {
     const snap = await getDoc(userRef);
@@ -232,8 +241,9 @@ export const loadProgressFromFirestore = async (): Promise<Partial<UserProgress>
 };
 
 export const syncJournalEntries = (setEntries: (entries: any[]) => void) => {
-  if (!auth.currentUser) return () => {};
-  const userId = auth.currentUser.uid;
+  const currentUser = auth.currentUser || getCustomUser();
+  if (!currentUser) return () => {};
+  const userId = currentUser.uid;
   const q = collection(db, `users/${userId}/journalEntries`);
   return onSnapshot(q, (snapshot) => {
     const entries: any[] = [];
@@ -249,8 +259,9 @@ export const syncJournalEntries = (setEntries: (entries: any[]) => void) => {
 };
 
 export const addJournalEntry = async (entry: any) => {
-  if (!auth.currentUser) return;
-  const userId = auth.currentUser.uid;
+  const currentUser = auth.currentUser || getCustomUser();
+  if (!currentUser) return;
+  const userId = currentUser.uid;
   const ref = doc(db, `users/${userId}/journalEntries`, entry.id);
   try {
     await setDoc(ref, {
@@ -263,8 +274,9 @@ export const addJournalEntry = async (entry: any) => {
 };
 
 export const deleteJournalEntry = async (id: string) => {
-  if (!auth.currentUser) return;
-  const userId = auth.currentUser.uid;
+  const currentUser = auth.currentUser || getCustomUser();
+  if (!currentUser) return;
+  const userId = currentUser.uid;
   const ref = doc(db, `users/${userId}/journalEntries`, id);
   try {
     await deleteDoc(ref);

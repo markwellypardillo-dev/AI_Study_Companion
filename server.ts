@@ -513,7 +513,7 @@ Return a list of strictly grounded questions in a JSON array.
   // --- Vite Asset Pipeline / Dev Server Static Setup ---
 
 async function startServer() {
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const PORT = 3000;
   
   const http = await import("http");
   const httpServer = http.createServer(app);
@@ -718,7 +718,7 @@ async function startServer() {
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: { server: httpServer } },
       appType: "spa",
     });
     app.use(vite.middlewares);

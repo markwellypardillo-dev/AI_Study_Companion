@@ -3,13 +3,15 @@ import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User,
 import { getFirestore, initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
+console.log("USING API KEY:", firebaseConfig.apiKey);
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)" 
-  ? initializeFirestore(app, { experimentalForceLongPolling: true }, firebaseConfig.firestoreDatabaseId) 
-  : initializeFirestore(app, { experimentalForceLongPolling: true });
+export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)" ? initializeFirestore(app, {}, firebaseConfig.firestoreDatabaseId) : initializeFirestore(app, {}); // 
+   
+  
 
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: "select_account" });
 provider.addScope('https://www.googleapis.com/auth/drive.readonly');
 
 let isSigningIn = false;
@@ -115,4 +117,14 @@ export const getAccessToken = async (): Promise<string | null> => {
 export const logout = async () => {
   await auth.signOut();
   cachedAccessToken = null;
+};
+
+export const emailPasswordSignIn = async (email, password) => {
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
+};
+
+export const emailPasswordSignUp = async (email, password) => {
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  return result.user;
 };

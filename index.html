@@ -3,16 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="AI Study" />
     <title>AI Study Companion | Gen-Z Personalized Learning</title>
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/ht4X0Tbj/LOGO-for-Ai-companion.png" />
+    <link rel="icon" type="image/png" href="/app_logo.png" />
+    <link rel="apple-touch-icon" href="/app_logo.png" />
     <!-- Premium Font Pairings -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   </head>
   <body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 antialiased selection:bg-indigo-500/10">
-    <div id="root"></div>
+    <div id="root"></div><script>if("serviceWorker" in navigator)navigator.serviceWorker.getRegistrations().then(rs=>{for(let r of rs)r.unregister()});if(window.caches)caches.keys().then(ns=>{for(let n of ns)caches.delete(n)});</script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

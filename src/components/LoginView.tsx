@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Sparkles, User, ArrowRight } from 'lucide-react';
+import appLogo from '../assets/images/app_logo.png';
 import { googleSignIn, auth } from '../lib/firebase';
+import { customEmailSignIn, customEmailSignUp } from '../lib/customAuth';
 import { logGlobalActivity } from '../lib/db';
 
 interface LoginViewProps {
@@ -11,6 +13,50 @@ interface LoginViewProps {
 export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+
+
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+    if (isRegistering && !username) {
+      setError("Please enter a username.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      let user;
+      if (isRegistering) {
+        user = await customEmailSignUp(email, password, username);
+      } else {
+        user = await customEmailSignIn(email, password);
+      }
+      if (user) {
+        setTimeout(() => logGlobalActivity("login"), 1000);
+        onLogin(user);
+      }
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        setError("This email is already registered. Please log in instead.");
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError("Invalid email or password.");
+      } else if (err.code === 'auth/weak-password') {
+        setError("Password should be at least 6 characters.");
+      } else {
+        setError(err.message || 'Failed to authenticate.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -48,8 +94,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) =
       <div className="relative z-10 w-full max-w-md">
         <div className="backdrop-blur-xl bg-white/5 dark:bg-black/25 border border-white/10 dark:border-zinc-800/60 rounded-3xl p-6 sm:p-8 shadow-2xl">
           <div className="text-center mb-6 sm:mb-8">
-             <div className="inline-flex items-center justify-center p-2.5 sm:p-3 bg-white/10 dark:bg-zinc-800/20 rounded-2xl mb-3 sm:mb-4 border border-white/20 dark:border-zinc-800/30 backdrop-blur-md">
-               <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
+             <div className="inline-flex items-center justify-center mb-3 sm:mb-4 rounded-2xl overflow-hidden shadow-lg border border-white/20 bg-white/10">
+               <img src={appLogo} alt="AI Study Companion Logo" className="w-14 h-14 sm:w-16 sm:h-16 object-cover" />
              </div>
              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Welcome
@@ -64,6 +110,52 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onEnterGuest }) =
               {error}
             </div>
           )}
+
+          
+          <form onSubmit={handleEmailAuth} className="flex flex-col gap-3 mb-4">
+                         {isRegistering && (
+             <input
+               type="text"
+               placeholder="Username"
+               value={username}
+               onChange={(e) => setUsername(e.target.value)}
+               className="w-full px-4 py-3 rounded-xl bg-black/20 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-indigo-500 transition-colors"
+             />
+            )}
+             <input type="email"
+               placeholder="Email Address"
+               value={email}
+               onChange={(e) => setEmail(e.target.value)}
+               className="w-full px-4 py-3 rounded-xl bg-black/20 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-indigo-500 transition-colors"
+             />
+             <input
+               type="password"
+               placeholder="Password"
+               value={password}
+               onChange={(e) => setPassword(e.target.value)}
+               className="w-full px-4 py-3 rounded-xl bg-black/20 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-indigo-500 transition-colors"
+             />
+             <button
+               type="submit"
+               disabled={loading}
+               className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+             >
+               {loading ? 'Processing...' : (isRegistering ? 'Register Account' : 'Login with Email')}
+             </button>
+             <button
+               type="button"
+               onClick={() => setIsRegistering(!isRegistering)}
+               className="text-sm text-white/60 hover:text-white transition-colors"
+             >
+               {isRegistering ? 'Already have an account? Login' : 'Need an account? Register'}
+             </button>
+          </form>
+
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-px bg-white/10 flex-1"></div>
+            <span className="text-white/40 text-sm">or</span>
+            <div className="h-px bg-white/10 flex-1"></div>
+          </div>
 
           <div className="flex flex-col gap-3 sm:gap-4">
              <button

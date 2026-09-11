@@ -1,4 +1,6 @@
-import confetti from "canvas-confetti";
+const fs = require('fs');
+
+let code = `import confetti from "canvas-confetti";
 let notificationAudio: HTMLAudioElement | null = null;
 let confettiAudio: HTMLAudioElement | null = null;
 
@@ -44,3 +46,6 @@ export const triggerConfettiWithSound = (options?: confetti.Options) => {
   playConfettiSound();
   return confetti(options);
 };
+`;
+
+fs.writeFileSync('src/lib/sounds.ts', code);

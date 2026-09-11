@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import appLogo from "../assets/images/app_logo.png";
 import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, BrainCircuit, Users, Focus, ArrowRight, CheckCircle2, X, Moon, MessageCircle } from "lucide-react";
 
@@ -27,7 +28,7 @@ export default function WelcomeTour() {
     {
       title: "Welcome to AI Study Companion",
       description: "Your personalized learning workspace. Let's take a quick tour to help you get the most out of your study sessions.",
-      icon: <img src="https://i.postimg.cc/ht4X0Tbj/LOGO-for-Ai-companion.png" alt="App Logo" className="w-16 h-16 rounded-2xl object-cover shadow-sm" />,
+      icon: <img src={appLogo} alt="App Logo" className="w-16 h-16 rounded-2xl object-cover shadow-sm" />,
       color: "bg-transparent border-transparent p-0"
     },
     {

@@ -162,7 +162,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
   };
 
   return (
-    <div className="mb-8 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-3xl relative overflow-hidden transition-all duration-300 shadow-sm">
+    <div className="mb-8 bg-white dark:bg-zinc-900/50 border-0 rounded-3xl relative overflow-hidden transition-all duration-300 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
       <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
         <Settings className="w-32 h-32 text-black dark:text-white" />
       </div>
@@ -253,7 +253,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                     </label>
                     <input
                       type="number"
-                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       value={level}
                       onChange={(e) => setLevel(e.target.value)}
                     />
@@ -264,7 +264,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                     </label>
                     <input
                       type="number"
-                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       value={streak}
                       onChange={(e) => setStreak(e.target.value)}
                     />
@@ -275,7 +275,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                     </label>
                     <input
                       type="number"
-                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       value={xp}
                       onChange={(e) => setXp(e.target.value)}
                     />
@@ -286,7 +286,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                     </label>
                     <input
                       type="number"
-                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       value={focusSeconds}
                       onChange={(e) => setFocusSeconds(e.target.value)}
                     />
@@ -297,7 +297,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                     </label>
                     <input
                       type="number"
-                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className="w-full bg-zinc-50 dark:bg-zinc-900 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl px-4 py-2 text-sm font-bold text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                       value={studiesCount}
                       onChange={(e) => setStudiesCount(e.target.value)}
                     />
@@ -351,13 +351,13 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                 </div>
                 
                 {activeUsers.length === 0 ? (
-                  <div className="text-center py-8 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800/50">
+                  <div className="text-center py-8 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border-0 shadow-md shadow-black/5 dark:shadow-black/20">
                     <p className="text-sm text-zinc-500 font-medium">No other users currently connected.</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-2 no-scrollbar">
                     {activeUsers.map((u) => (
-                      <div key={u.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900/80 rounded-xl border border-zinc-200 dark:border-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+                      <div key={u.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900/80 rounded-xl border-0 shadow-md shadow-black/5 dark:shadow-black/20 hover:shadow-lg dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold text-xs">
                             {u.avatarChar}
@@ -406,7 +406,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                   <Megaphone className="w-4 h-4 text-amber-500" />
                   <h3 className="text-sm font-bold">Global System Announcement</h3>
                 </div>
-                <div className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
+                <div className="bg-amber-500/10 dark:bg-amber-500/5 shadow-sm shadow-amber-500/20 rounded-2xl p-4">
                   <p className="text-xs text-amber-700 dark:text-amber-400 mb-3">
                     Broadcast a real-time message to all active users currently in the application. This will trigger a notification overlay on their screens.
                   </p>
@@ -454,11 +454,11 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                     <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Live Online</p>
                     <p className="text-2xl font-black text-emerald-500">{activeCount}</p>
                   </div>
-                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                     <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Avg. Level</p>
                     <p className="text-2xl font-black">{
                       activeUsers.length > 0 
@@ -466,13 +466,13 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                         : progress.level
                     }</p>
                   </div>
-                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                     <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Focusing</p>
                     <p className="text-2xl font-black">{
                       activeUsers.filter(u => u.mode.includes("Focus")).length
                     }</p>
                   </div>
-                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                     <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Testing</p>
                     <p className="text-2xl font-black">{
                       activeUsers.filter(u => u.mode.includes("Assessment")).length
@@ -480,7 +480,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                   </div>
                 </div>
                 
-                <div className="mt-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                <div className="mt-4 bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                   <p className="text-xs font-bold text-zinc-500 mb-4 uppercase tracking-wider">7-Day Engagement & Generation Trends</p>
                   <div className="h-48 w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -513,21 +513,21 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                   </div>
                 </div>
 
-                <div className="mt-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                <div className="mt-4 bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                   <p className="text-xs font-bold text-zinc-500 mb-3 uppercase tracking-wider">Lifetime Platform Stats (Database)</p>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3">
+                    <div className="bg-white dark:bg-zinc-950 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl p-3">
                       <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Total Registered Users</p>
                       <p className="text-xl font-black text-indigo-500 mb-2">{globalStats.totalUsers}</p>
                       <div className="max-h-24 overflow-y-auto pr-1 no-scrollbar space-y-1">
                         {globalStats.registeredUsersList?.map((u, i) => (
                           <div key={i} className="text-[10px] text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900 p-1.5 rounded truncate">
-                            {u.email || u.uid || 'Unknown'}
+                            {u.username || u.email || u.uid || 'Unknown'}
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3">
+                    <div className="bg-white dark:bg-zinc-950 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl p-3">
                       <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Total Guests</p>
                       <p className="text-xl font-black text-emerald-500 mb-2">{globalStats.totalGuests}</p>
                       <div className="max-h-24 overflow-y-auto pr-1 no-scrollbar space-y-1">
@@ -538,7 +538,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                         ))}
                       </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-col justify-between">
+                    <div className="bg-white dark:bg-zinc-950 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl p-3 flex flex-col justify-between">
                       <div>
                         <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Total AI Study Guides</p>
                         <p className="text-xl font-black text-amber-500">{globalStats.totalDocuments}</p>
@@ -551,11 +551,11 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                   </div>
                 </div>
 
-                <div className="mt-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                <div className="mt-4 bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                   <p className="text-xs font-bold text-zinc-500 mb-3 uppercase tracking-wider">Top Students (Leaderboard)</p>
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-2 no-scrollbar">
                     {globalStats.registeredUsersList?.slice().sort((a, b) => (b.xp || 0) - (a.xp || 0)).slice(0, 10).map((u, i) => (
-                      <div key={i} className="flex flex-col gap-2 p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/50 rounded-xl">
+                      <div key={i} className="flex flex-col gap-2 p-3 bg-white dark:bg-zinc-950 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <span className={`text-sm font-black w-6 text-center ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-zinc-400' : i === 2 ? 'text-amber-700' : 'text-zinc-500'}`}>#{i + 1}</span>
@@ -657,7 +657,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                   </div>
                 </div>
                 
-                <div className="mt-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                <div className="mt-4 bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                   <p className="text-xs font-bold text-zinc-500 mb-3 uppercase tracking-wider">Currently Studied Topics</p>
                   <div className="flex flex-wrap gap-2">
                     {activeUsers.map(u => u.subject).filter((v, i, a) => a.indexOf(v) === i && !v.includes("Preparing")).map((subject, idx) => (
@@ -697,13 +697,13 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                   </button>
                 </div>
                 
-                <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                <div className="bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-3">
                     <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Live System Events ({globalActivities.length})</p>
                     <div className="flex gap-2">
                       <select 
                         id="activityFilter"
-                        className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-medium px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
+                        className="bg-white dark:bg-zinc-950 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-lg text-xs font-medium px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
                         onChange={(e) => {
                           const val = e.target.value;
                           const container = document.getElementById('activity-list-container');
@@ -731,7 +731,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                       <p className="text-xs text-zinc-400 text-center py-4">No recent activities logged.</p>
                     ) : (
                       globalActivities.map(act => (
-                        <div key={act.id} data-action={act.action} className="flex flex-col gap-1 p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/50 rounded-xl">
+                        <div key={act.id} data-action={act.action} className="flex flex-col gap-1 p-3 bg-white dark:bg-zinc-950 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-xl">
                           <div className="flex justify-between items-center">
                             <span className="text-xs font-bold text-black dark:text-white">
                               {act.action === "generate_guide" && "📚 Generated Guide"}
@@ -745,7 +745,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                             </span>
                           </div>
                           <p className="text-xs text-zinc-500 truncate">
-                            <span className="font-semibold">{act.email || act.userId}</span>
+                            <span className="font-semibold">{act.username || act.email || act.userId}</span>
                             {act.action === "generate_guide" && ` generated a guide for "${act.metadata?.fileName}"`}
                             {act.action === "quiz_submitted" && ` scored ${act.metadata?.score}/${act.metadata?.total} on "${act.metadata?.fileName}"`}
                             {act.action === "focus_completed" && ` focused for ${act.metadata?.minutes} minutes`}
@@ -775,7 +775,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                   </button>
                 </div>
                 
-                <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-4">
+                <div className="bg-zinc-50 dark:bg-zinc-900/50 border-0 shadow-md shadow-black/5 dark:shadow-black/20 rounded-2xl p-4">
                   <p className="text-xs font-bold text-zinc-500 mb-3 uppercase tracking-wider">Recently Generated User Study Guides</p>
                   
                   {moderationGuides.length === 0 ? (
@@ -788,7 +788,7 @@ export default function AdminPanel({ progress, onUpdateProgress, user }: AdminPa
                         const isFlagged = flaggedWords.some(w => contentString.includes(w));
                         
                         return (
-                        <div key={guide.id} className={`flex flex-col gap-2 p-3 bg-white dark:bg-zinc-950 border ${isFlagged ? 'border-red-500/50 bg-red-50/50 dark:bg-red-950/20' : 'border-zinc-200 dark:border-zinc-800'} rounded-xl hover:border-purple-300 dark:hover:border-purple-800 transition-colors`}>
+                        <div key={guide.id} className={`flex flex-col gap-2 p-3 bg-white dark:bg-zinc-950 border-0 shadow-sm shadow-black/5 dark:shadow-black/20 ${isFlagged ? 'shadow-red-500/20 bg-red-50/50 dark:bg-red-950/20' : ''} rounded-xl hover:shadow-md hover:shadow-purple-500/20 dark:hover:shadow-purple-500/20 transition-colors`}>
                           <div className="flex justify-between items-start">
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-bold truncate text-black dark:text-white" title={guide.fileName}>
