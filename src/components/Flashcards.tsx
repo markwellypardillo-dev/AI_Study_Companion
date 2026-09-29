@@ -210,9 +210,7 @@ export default function Flashcards({ cards, onMasterTerm }: FlashcardsProps) {
             </div>
 
             <div className="my-auto text-center px-4">
-              <p className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-snug">
-                {currentCard.front}
-              </p>
+              <div className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-snug"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{currentCard.front}</ReactMarkdown></div>
             </div>
 
             <div className="flex justify-between items-center text-xs text-ios-secondary-text font-medium">
@@ -237,9 +235,7 @@ export default function Flashcards({ cards, onMasterTerm }: FlashcardsProps) {
             </div>
 
             <div className="my-auto px-2 overflow-y-auto max-h-40">
-              <p className="text-base leading-relaxed text-zinc-250 text-center font-medium text-white">
-                {currentCard.back}
-              </p>
+              <div className="text-base leading-relaxed text-zinc-250 text-center font-medium text-white"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none text-left [&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{currentCard.back}</ReactMarkdown></div>
             </div>
 
             <div className="flex flex-col mt-4 gap-3">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { HelpCircle, CheckCircle, XCircle, Award, RefreshCw, BookMarked, ArrowUpRight, Trophy, GraduationCap, FastForward, ShieldAlert } from "lucide-react";
 import { AssessmentQuestion, DifficultyTier } from "../types";
+import ReactMarkdown from "react-markdown";
 import { triggerConfettiWithSound as confetti } from "../lib/sounds";
 import { PRELOADED_SUBJECTS } from "../data/preloadedSubjects";
 
@@ -236,9 +237,7 @@ export default function QuizView({
                   </span>
                 </div>
 
-                <h4 className="text-sm font-extrabold text-black dark:text-white leading-relaxed mb-4">
-                  {q.question}
-                </h4>
+                <div className="text-sm font-extrabold text-black dark:text-white leading-relaxed mb-4"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{q.question}</ReactMarkdown></div>
 
                 {/* BASIC MCQ & TRUE / FALSE Options */}
                 {(q.type === "mcq" || q.type === "tf") && q.options && (
@@ -334,7 +333,7 @@ export default function QuizView({
 
                 {quizFinished && q.explanation && (
                   <div className="mt-4 p-3 bg-zinc-150/40 dark:bg-zinc-950/40 rounded-xl text-[11px] text-ios-secondary-text leading-relaxed border border-dashed border-zinc-200 dark:border-zinc-850">
-                    <strong className="text-black dark:text-white font-bold">Explanation:</strong> {q.explanation}
+                    <strong className="text-black dark:text-white font-bold">Explanation:</strong> <div className="mt-1"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{q.explanation}</ReactMarkdown></div>
                   </div>
                 )}
               </div>

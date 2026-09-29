@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { OfficeParser } from "officeparser";
+import fs from "fs";
 
 dotenv.config({ override: true });
 
@@ -12,14 +13,23 @@ app.use(express.json({ limit: "50mb" }));
 
 // Initialize Google GenAI on the server
 // User-Agent: 'aistudio-build' is required for telemetry
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
+let aiClient: GoogleGenAI | null = null;
+function getAI() {
+  if (!aiClient) {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    aiClient = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+  }
+  return aiClient;
+}
 
 // A robust helper to execute generateContent calls with exponential backoff retries and model fallback switches
 async function generateContentWithRetryAndFallback(params: {
@@ -37,7 +47,7 @@ async function generateContentWithRetryAndFallback(params: {
       try {
         console.log(`[Gemini API] Querying model "${model}" (attempt ${attempt + 1}/${maxRetries + 1})...`);
         
-        const response = await ai.models.generateContent({
+        const response = await getAI().models.generateContent({
           model,
           contents: params.contents,
           config: params.config,
@@ -105,7 +115,7 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
 
     const prompt = "Please transcribe all text from this image accurately. If there are diagrams, charts, or visual information, write a detailed description of them. Structure the transcription logically.";
     
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         {
@@ -131,7 +141,7 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
   } else if (extension === "pdf") {
     const prompt = "You are analyzing a PDF document. Some PDFs contain only images (like scanned slides or photos). DO NOT just read the metadata or alt-text (e.g. 'image10.jpg'). You MUST visually inspect the actual pages and images within the PDF. Transcribe any text you see inside the images, and describe any charts, diagrams, or visual content in high detail.";
     
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         {
@@ -276,7 +286,7 @@ app.post("/api/study-lounge/presence", (req, res) => {
 You are an expert EdTech tutor. Your job is to generate a comprehensive, highly intelligent, and structured Study Guide based STRICTLY on the document content provided below. 
 You are strictly forbidden from fabricating or using outside knowledge (no hallucinations). Do NOT get any definitions or facts from online sources or external dictionaries. All facts, summaries, key concepts, vocabulary definitions, and flashcards MUST be 100% grounded in the source text provided. 
 
-Analyze the text deeply to identify the most critical information, core arguments, and essential data that a student MUST memorize because it is highly likely to appear in their quizzes, exams, or oral recitations. Focus on high-yield information.
+Analyze the text deeply to identify the most critical information, core arguments, and essential data that a student MUST memorize because it is highly likely to appear in their quizzes, exams, or oral recitations. Focus on high-yield information. IMPORTANT FORMATTING: You must use Markdown (including Markdown code blocks like \`\`\`python ... \`\`\`, inline code \`...\`, bolding, and italics) for all text fields (like summary, explanations, flashcards, etc.) to heavily improve readability. If the document contains coding, scripts, or technical algorithms, explicitly feature syntax-highlighted markdown code blocks in your explanations.
 
 Document Title: ${fileName || "Untitled Document"}
 Document Text:
@@ -480,7 +490,7 @@ ${fileContent}
 Format Requirements:
 ${formatInstructions}
 
-Return a list of strictly grounded questions in a JSON array.
+Return a list of strictly grounded questions in a JSON array. IMPORTANT FORMATTING: You must use Markdown (including Markdown code blocks like \`\`\`python ... \`\`\`, inline code \`...\`, bolding, and italics) in your questions, sample answers, and explanations to heavily improve readability. If the source material is coding-related, ensure syntax-highlighted code blocks are used.
 `;
 
       const response = await generateContentWithRetryAndFallback({
@@ -513,7 +523,7 @@ Return a list of strictly grounded questions in a JSON array.
   // --- Vite Asset Pipeline / Dev Server Static Setup ---
 
 async function startServer() {
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
   
   const http = await import("http");
   const httpServer = http.createServer(app);
@@ -716,7 +726,8 @@ async function startServer() {
     }
   }, 15000);
 
-  if (process.env.NODE_ENV !== "production") {
+  const isProduction = process.env.NODE_ENV === "production";
+  if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: { server: httpServer } },
       appType: "spa",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BookOpen, Key, Brain, ListCollapse, Search, BookMarked, HelpCircle, GraduationCap, ChevronRight, Lightbulb, Sparkles, MessageCircle } from "lucide-react";
 import { StudyGuideData } from "../types";
+import ReactMarkdown from "react-markdown";
 
 interface GuideViewProps {
   guide: StudyGuideData;
@@ -142,11 +143,7 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
               <span className="w-2.5 h-2.5 rounded-full bg-black dark:bg-white animate-pulse" /> Executive Digest
             </h2>
             <div className="space-y-4 text-sm leading-relaxed text-black/85 dark:text-zinc-300">
-              {(guide.summary || "").split("\n\n").map((para, idx) => (
-                <p key={idx} className="indent-2">
-                  {para}
-                </p>
-              ))}
+              <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{guide.summary}</ReactMarkdown>
             </div>
           </div>
         )}
@@ -213,9 +210,7 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
                   <h3 className="text-lg font-black text-black dark:text-white tracking-tight leading-snug">
                     {item.concept}
                   </h3>
-                  <p className="text-sm text-ios-secondary-text leading-relaxed mt-3">
-                    {item.explanation}
-                  </p>
+                  <div className="text-sm text-ios-secondary-text leading-relaxed mt-3"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{item.explanation}</ReactMarkdown></div>
                 </div>
                 {item.importance && (
                   <div className="border-t border-zinc-200/50 dark:border-zinc-800/50 pt-4 mt-4 text-xs font-medium text-ios-secondary-text bg-ios-light-bg dark:bg-ios-dark-bg px-3 py-2 rounded-xl">
@@ -258,9 +253,7 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
                     <div className="md:w-1/4 font-extrabold text-sm text-zinc-950 dark:text-zinc-50 group-hover:translate-x-1 transition-transform">
                       {item.term}
                     </div>
-                    <div className="md:w-3/4 text-sm text-black/85 dark:text-white/85 font-normal leading-relaxed">
-                      {item.definition}
-                    </div>
+                    <div className="md:w-3/4 text-sm text-black/85 dark:text-white/85 font-normal leading-relaxed"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{item.definition}</ReactMarkdown></div>
                   </div>
                 ))}
               </div>
@@ -287,7 +280,7 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
             
             <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-5">
               <h3 className="text-sm font-extrabold text-black dark:text-white mb-2">The Breakdown</h3>
-              <p className="text-black/85 dark:text-zinc-300 text-sm leading-relaxed">{guide.feynman.explanation}</p>
+              <div className="text-black/85 dark:text-zinc-300 text-sm leading-relaxed"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{guide.feynman.explanation}</ReactMarkdown></div>
             </div>
           </div>
         )}
@@ -337,7 +330,7 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
                     </h3>
                     <div className="bg-zinc-100/50 dark:bg-zinc-900/50 border border-zinc-200/80 dark:border-zinc-850 p-4 rounded-xl text-sm">
                       <strong className="text-black dark:text-white font-bold block mb-1 text-xs uppercase tracking-wider text-ios-secondary-text">How to approach this:</strong> 
-                      <p className="text-black/85 dark:text-zinc-300 leading-relaxed">{item.guidance}</p>
+                      <div className="text-black/85 dark:text-zinc-300 leading-relaxed"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{item.guidance}</ReactMarkdown></div>
                     </div>
                   </div>
                 </div>
