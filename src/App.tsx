@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
-  Sparkles,
+  Cpu,
+  ArrowRight,
   BookOpen,
   HelpCircle,
   Clock,
@@ -1859,7 +1860,7 @@ export default function App() {
                 className="bg-zinc-100/90 dark:bg-zinc-950/90 rounded-3xl p-6 flex items-center gap-6 text-left border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm"
               >
                 <div className="w-14 h-14 lg:w-16 lg:h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center shrink-0">
-                  <Sparkles className="w-7 h-7 lg:w-8 lg:h-8 text-indigo-500" />
+                  <Cpu className="w-7 h-7 lg:w-8 lg:h-8 text-indigo-500" />
                 </div>
                 <div>
                   <p className="text-lg lg:text-xl font-bold text-zinc-900 dark:text-white mb-1">Upgrading AI Models</p>
@@ -2339,9 +2340,9 @@ export default function App() {
                         Review the synthesized executive summary, structured section headers, core concepts, and dictionary word glossaries.
                       </p>
                     </div>
-                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold">
+                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold group-hover:text-black dark:group-hover:text-white transition-colors">
                       <span>Explore materials</span>
-                      <Sparkles className="w-3.5 h-3.5 animate-pulse text-zinc-500 dark:text-zinc-300" />
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform text-zinc-500 dark:text-zinc-300" />
                     </div>
                   </div>
 
@@ -2362,9 +2363,9 @@ export default function App() {
                         Challenge your brain using progressive difficulty modes. Track scores with adaptive unlocks and level up!
                       </p>
                     </div>
-                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold">
+                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold group-hover:text-black dark:group-hover:text-white transition-colors">
                       <span>Begin Quizzes</span>
-                      <Sparkles className="w-3.5 h-3.5 animate-pulse text-zinc-500 dark:text-zinc-300" />
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform text-zinc-500 dark:text-zinc-300" />
                     </div>
                   </div>
 
@@ -2385,9 +2386,9 @@ export default function App() {
                         Spin flippable memory modules containing key vocabulary words. Test direct recall with visual mastery feedback.
                       </p>
                     </div>
-                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold">
+                    <div className="mt-6 flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 font-extrabold group-hover:text-black dark:group-hover:text-white transition-colors">
                       <span>Review cards</span>
-                      <Sparkles className="w-3.5 h-3.5 animate-pulse text-zinc-500 dark:text-zinc-300" />
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform text-zinc-500 dark:text-zinc-300" />
                     </div>
                   </div>
 

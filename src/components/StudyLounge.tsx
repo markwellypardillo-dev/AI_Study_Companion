@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Users, Shuffle, Sparkles, User, Flame, GraduationCap, Edit2, Check, X, Wifi, Camera, Trash2 } from "lucide-react";
+import { Users, Shuffle, User, Flame, GraduationCap, Edit2, Check, X, Wifi, Camera, Trash2 } from "lucide-react";
 import { 
   CompanionStudent, 
   subscribeToPresence, 

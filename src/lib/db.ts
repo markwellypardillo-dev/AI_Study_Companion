@@ -5,13 +5,19 @@ import { UserProgress } from "../types";
 
 export const subscribeToMaintenanceMode = (setMaintenance: (isMaintenance: boolean) => void) => {
   const ref = doc(db, "config/system");
-  return onSnapshot(ref, (snap) => {
-    if (snap.exists()) {
-      setMaintenance(snap.data().maintenanceMode === true);
-    } else {
-      setMaintenance(false);
+  return onSnapshot(
+    ref,
+    (snap) => {
+      if (snap.exists()) {
+        setMaintenance(snap.data().maintenanceMode === true);
+      } else {
+        setMaintenance(false);
+      }
+    },
+    (error) => {
+      console.warn("Firestore maintenance listener info (operating in offline cache mode):", error.message);
     }
-  });
+  );
 };
 
 export const setMaintenanceMode = async (enabled: boolean) => {
@@ -179,19 +185,25 @@ export const subscribeToGlobalActivities = (setActivities: (acts: any[]) => void
   // We can't order by timestamp without an index, so we might just fetch and sort in memory if the collection is small,
   // but let's query all or recent, actually without orderBy it might return in any order. Let's just fetch all and sort in memory for now (MVP).
   const q = collection(db, "activities");
-  return onSnapshot(q, (snapshot) => {
-    const activities: any[] = [];
-    snapshot.forEach((doc) => {
-      activities.push({ id: doc.id, ...doc.data() });
-    });
-    // Sort descending by timestamp
-    activities.sort((a, b) => {
-      const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
-      const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
-      return timeB - timeA;
-    });
-    setActivities(activities.slice(0, limitCount));
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const activities: any[] = [];
+      snapshot.forEach((doc) => {
+        activities.push({ id: doc.id, ...doc.data() });
+      });
+      // Sort descending by timestamp
+      activities.sort((a, b) => {
+        const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+        const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+        return timeB - timeA;
+      });
+      setActivities(activities.slice(0, limitCount));
+    },
+    (error) => {
+      console.warn("Firestore activities listener info (operating in offline cache mode):", error.message);
+    }
+  );
 };
 
 export const saveProgressToFirestore = async (progress: UserProgress) => {

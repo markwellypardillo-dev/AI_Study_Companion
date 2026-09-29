@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import appLogo from "../assets/images/app_logo.png";
 import { motion, AnimatePresence } from "motion/react";
-import { Sparkles, BrainCircuit, Users, Focus, ArrowRight, CheckCircle2, X, Moon, MessageCircle } from "lucide-react";
+import { Lightbulb, BrainCircuit, Users, Focus, ArrowRight, CheckCircle2, X, Moon, MessageCircle } from "lucide-react";
 
 export default function WelcomeTour() {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +40,7 @@ export default function WelcomeTour() {
     {
       title: "Feynman Technique & Mnemonics",
       description: "Struggling with complex topics? Let AI break them down using the Feynman Technique (Explain Like I'm 5), and generate catchy mnemonics to lock them in your memory.",
-      icon: <Sparkles className="w-10 h-10 text-indigo-500" />,
+      icon: <Lightbulb className="w-10 h-10 text-indigo-500" />,
       color: "bg-indigo-500/10 border-indigo-500/20 p-4"
     },
     {

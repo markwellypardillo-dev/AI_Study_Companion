@@ -1,5 +1,5 @@
 import { useState, useRef, DragEvent, ChangeEvent, useEffect, useMemo } from "react";
-import { UploadCloud, FileText, CheckCircle2, AlertCircle, AlertTriangle, Play, Sparkles, ChevronDown, HardDrive } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, AlertTriangle, Play, FolderOpen, ChevronDown, HardDrive } from "lucide-react";
 import { PRELOADED_SUBJECTS } from "../data/preloadedSubjects";
 import GoogleDrivePicker from "./GoogleDrivePicker";
 
@@ -321,7 +321,7 @@ export default function UploadView({ onFileLoaded, isLoading, user }: UploadView
                   id="btn-trigger-file-select"
                   className="px-5 py-2.5 bg-black dark:bg-white text-white dark:text-black text-xs font-bold rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <FolderOpen className="w-3.5 h-3.5" />
                   Browse files
                 </button>
                 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Key, Brain, ListCollapse, Search, BookMarked, HelpCircle, GraduationCap, ChevronRight, Lightbulb, Sparkles, MessageCircle } from "lucide-react";
+import { BookOpen, Key, Brain, ListCollapse, Search, BookMarked, HelpCircle, GraduationCap, ChevronRight, Lightbulb, MessageCircle } from "lucide-react";
 import { StudyGuideData } from "../types";
 import ReactMarkdown from "react-markdown";
 
@@ -111,7 +111,7 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
                   : "text-ios-secondary-text hover:text-black dark:hover:text-white lg:bg-ios-light-secondary dark:lg:bg-ios-dark-secondary border border-transparent"
               }`}
             >
-              <Sparkles className="w-4 h-4" /> Mnemonics
+              <Lightbulb className="w-4 h-4" /> Mnemonics
             </button>
           )}
           {guide.discussionPrompts && guide.discussionPrompts.length > 0 && (
@@ -142,8 +142,8 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
             <h2 className="text-lg font-black text-black dark:text-white flex items-center gap-2 mb-4 animate-fade-in">
               <span className="w-2.5 h-2.5 rounded-full bg-black dark:bg-white animate-pulse" /> Executive Digest
             </h2>
-            <div className="space-y-4 text-sm leading-relaxed text-black/85 dark:text-zinc-300">
-              <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{guide.summary}</ReactMarkdown>
+            <div className="space-y-4 text-sm leading-relaxed text-black/85 dark:text-zinc-300 prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">
+              <ReactMarkdown>{guide.summary}</ReactMarkdown>
             </div>
           </div>
         )}
@@ -210,7 +210,9 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
                   <h3 className="text-lg font-black text-black dark:text-white tracking-tight leading-snug">
                     {item.concept}
                   </h3>
-                  <div className="text-sm text-ios-secondary-text leading-relaxed mt-3"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{item.explanation}</ReactMarkdown></div>
+                  <div className="text-sm text-ios-secondary-text leading-relaxed mt-3 prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">
+                    <ReactMarkdown>{item.explanation}</ReactMarkdown>
+                  </div>
                 </div>
                 {item.importance && (
                   <div className="border-t border-zinc-200/50 dark:border-zinc-800/50 pt-4 mt-4 text-xs font-medium text-ios-secondary-text bg-ios-light-bg dark:bg-ios-dark-bg px-3 py-2 rounded-xl">
@@ -253,7 +255,9 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
                     <div className="md:w-1/4 font-extrabold text-sm text-zinc-950 dark:text-zinc-50 group-hover:translate-x-1 transition-transform">
                       {item.term}
                     </div>
-                    <div className="md:w-3/4 text-sm text-black/85 dark:text-white/85 font-normal leading-relaxed"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{item.definition}</ReactMarkdown></div>
+                    <div className="md:w-3/4 text-sm text-black/85 dark:text-white/85 font-normal leading-relaxed prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-100 dark:[&>pre]:bg-zinc-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-100 dark:[&>code]:bg-zinc-900 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">
+                      <ReactMarkdown>{item.definition}</ReactMarkdown>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -280,7 +284,9 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
             
             <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl p-5">
               <h3 className="text-sm font-extrabold text-black dark:text-white mb-2">The Breakdown</h3>
-              <div className="text-black/85 dark:text-zinc-300 text-sm leading-relaxed"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{guide.feynman.explanation}</ReactMarkdown></div>
+              <div className="text-black/85 dark:text-zinc-300 text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">
+                <ReactMarkdown>{guide.feynman.explanation}</ReactMarkdown>
+              </div>
             </div>
           </div>
         )}
@@ -296,7 +302,7 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <span className="flex items-center gap-1 text-xs font-bold text-black dark:text-white bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full">
-                      <Sparkles className="w-3.5 h-3.5" /> Memory Trick
+                      <Lightbulb className="w-3.5 h-3.5" /> Memory Trick
                     </span>
                   </div>
                   <h3 className="text-lg font-black text-black dark:text-white tracking-tight leading-snug">
@@ -330,7 +336,9 @@ export default function GuideView({ guide, fileName }: GuideViewProps) {
                     </h3>
                     <div className="bg-zinc-100/50 dark:bg-zinc-900/50 border border-zinc-200/80 dark:border-zinc-850 p-4 rounded-xl text-sm">
                       <strong className="text-black dark:text-white font-bold block mb-1 text-xs uppercase tracking-wider text-ios-secondary-text">How to approach this:</strong> 
-                      <div className="text-black/85 dark:text-zinc-300 leading-relaxed"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{item.guidance}</ReactMarkdown></div>
+                      <div className="text-black/85 dark:text-zinc-300 leading-relaxed prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">
+                        <ReactMarkdown>{item.guidance}</ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -6,7 +6,7 @@ import {
   RotateCcw,
   Coffee,
   Target,
-  Sparkles,
+  Trophy,
   Flame,
   X,
   Settings,
@@ -184,7 +184,7 @@ export default function DynamicIsland({
           {isAchievement && (
             <div className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400 font-extrabold flex items-center justify-between border-t border-zinc-250 dark:border-zinc-800/80 pt-1.5 font-sans">
               <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500">
-                <Sparkles className="w-3 h-3 fill-amber-500" />
+                <Trophy className="w-3 h-3 fill-amber-500 text-amber-500" />
                 Durable Achievement Unlocked!
               </span>
               <span className="bg-amber-500/10 text-amber-600 dark:text-amber-500 px-2 py-0.5 rounded text-[9px] border border-amber-500/15">
@@ -517,7 +517,7 @@ export default function DynamicIsland({
       );
     }
 
-    // ------------------ Idle State (✨ AI Companion branding or Study Mode) ------------------
+    // ------------------ Idle State (AI Companion branding or Study Mode) ------------------
     return (
       <motion.div
         key="idle-state"

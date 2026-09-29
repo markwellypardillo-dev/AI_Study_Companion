@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles } from "lucide-react";
+import { BrainCircuit } from "lucide-react";
 
 export default function GuideLoadingScreen({ onCancel }: { onCancel: () => void }) {
   const [phase, setPhase] = useState(0);
@@ -29,7 +29,7 @@ export default function GuideLoadingScreen({ onCancel }: { onCancel: () => void 
       {/* Loading Status Header */}
       <div className="text-center mb-10 pb-6 border-b border-zinc-200 dark:border-zinc-800">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-900 mb-4">
-          <Sparkles className="w-6 h-6 text-black dark:text-white animate-pulse" />
+          <BrainCircuit className="w-6 h-6 text-black dark:text-white animate-pulse" />
         </div>
         <h3 className="text-lg font-black text-black dark:text-white mb-2">
           {aiSteps[phase]}

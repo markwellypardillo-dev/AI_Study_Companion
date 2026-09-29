@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, User, ArrowRight } from 'lucide-react';
+import { User, ArrowRight } from 'lucide-react';
 import appLogo from '../assets/images/app_logo.png';
 import { googleSignIn, auth } from '../lib/firebase';
 import { customEmailSignIn, customEmailSignUp } from '../lib/customAuth';

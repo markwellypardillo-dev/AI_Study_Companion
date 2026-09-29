@@ -4,7 +4,6 @@ import {
   Droplet, 
   Wind, 
   CheckCircle, 
-  Sparkles, 
   Smile, 
   Compass, 
   Volume2, 
@@ -483,7 +482,7 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
 
   return (
     <div className="relative overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-[#1a1c23]/60 border-none rounded-3xl p-5 shadow-[0_8px_32px_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] space-y-4 before:absolute before:inset-0 before:bg-gradient-to-br before:from-zinc-400/10 dark:before:from-zinc-600/10 before:to-transparent before:opacity-50 before:pointer-events-none">
-      {/* Title block with sparkles */}
+      {/* Title block */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-zinc-200/50 dark:border-zinc-800/40 pb-3">
         {/* Left column - Oasis Pill */}
         <div className="flex items-center justify-start">
@@ -547,9 +546,6 @@ export default function StudentOasis({ progress, onAddXp, journalCount }: Studen
       {activeTab === "garden" && (
         <div className="space-y-4">
           <div className="flex flex-col items-center justify-center bg-white dark:bg-zinc-900 p-4.5 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] border-none relative overflow-hidden group min-h-[170px]">
-            {/* Visual Sparkle decoration */}
-            <span className="absolute top-2.5 right-2.5 text-xs text-amber-400 group-hover:scale-125 transition-transform animate-pulse">✨</span>
-
             {/* Large Plant Emoji Container */}
             <div className="relative flex items-center justify-center w-20 h-20 bg-emerald-500/10 dark:bg-emerald-950/20 rounded-full border border-emerald-500/20 mb-3 select-none">
               <span className="text-4xl animate-bounce" style={{ animationDuration: "3.5s" }}>

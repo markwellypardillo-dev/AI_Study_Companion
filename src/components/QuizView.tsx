@@ -237,7 +237,9 @@ export default function QuizView({
                   </span>
                 </div>
 
-                <div className="text-sm font-extrabold text-black dark:text-white leading-relaxed mb-4"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{q.question}</ReactMarkdown></div>
+                <div className="text-sm font-extrabold text-black dark:text-white leading-relaxed mb-4 prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">
+                  <ReactMarkdown>{q.question}</ReactMarkdown>
+                </div>
 
                 {/* BASIC MCQ & TRUE / FALSE Options */}
                 {(q.type === "mcq" || q.type === "tf") && q.options && (
@@ -333,7 +335,10 @@ export default function QuizView({
 
                 {quizFinished && q.explanation && (
                   <div className="mt-4 p-3 bg-zinc-150/40 dark:bg-zinc-950/40 rounded-xl text-[11px] text-ios-secondary-text leading-relaxed border border-dashed border-zinc-200 dark:border-zinc-850">
-                    <strong className="text-black dark:text-white font-bold">Explanation:</strong> <div className="mt-1"><ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">{q.explanation}</ReactMarkdown></div>
+                    <strong className="text-black dark:text-white font-bold">Explanation:</strong> 
+                    <div className="mt-1 prose prose-sm dark:prose-invert max-w-none [&>pre]:bg-zinc-200 dark:[&>pre]:bg-zinc-800 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:overflow-x-auto [&>code]:bg-zinc-200 dark:[&>code]:bg-zinc-800 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:font-mono">
+                      <ReactMarkdown>{q.explanation}</ReactMarkdown>
+                    </div>
                   </div>
                 )}
               </div>

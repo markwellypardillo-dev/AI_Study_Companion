@@ -33,10 +33,10 @@ function getAI() {
 
 // A robust helper to execute generateContent calls with exponential backoff retries and model fallback switches
 async function generateContentWithRetryAndFallback(params: {
-  contents: string;
+  contents: any;
   config?: any;
 }): Promise<any> {
-  const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3.5-flash", "gemini-3.1-pro-preview"];
+  const modelsToTry = ["gemini-3.8-flash", "gemini-3.1-pro-preview"];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -115,8 +115,7 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
 
     const prompt = "Please transcribe all text from this image accurately. If there are diagrams, charts, or visual information, write a detailed description of them. Structure the transcription logically.";
     
-    const response = await getAI().models.generateContent({
-      model: "gemini-2.5-flash",
+    const response = await generateContentWithRetryAndFallback({
       contents: [
         {
           role: "user",
@@ -141,8 +140,7 @@ async function extractTextFromBase64(fileName: string, base64Data: string): Prom
   } else if (extension === "pdf") {
     const prompt = "You are analyzing a PDF document. Some PDFs contain only images (like scanned slides or photos). DO NOT just read the metadata or alt-text (e.g. 'image10.jpg'). You MUST visually inspect the actual pages and images within the PDF. Transcribe any text you see inside the images, and describe any charts, diagrams, or visual content in high detail.";
     
-    const response = await getAI().models.generateContent({
-      model: "gemini-2.5-flash",
+    const response = await generateContentWithRetryAndFallback({
       contents: [
         {
           role: "user",
@@ -523,7 +521,7 @@ Return a list of strictly grounded questions in a JSON array. IMPORTANT FORMATTI
   // --- Vite Asset Pipeline / Dev Server Static Setup ---
 
 async function startServer() {
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
   
   const http = await import("http");
   const httpServer = http.createServer(app);

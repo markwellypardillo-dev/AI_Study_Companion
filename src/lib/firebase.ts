@@ -1,14 +1,41 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, doc, getDocFromServer, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-console.log("USING API KEY:", firebaseConfig.apiKey);
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)" ? initializeFirestore(app, {}, firebaseConfig.firestoreDatabaseId) : initializeFirestore(app, {}); // 
-   
-  
+
+// Use experimentalForceLongPolling & experimentalAutoDetectLongPolling to prevent
+// Cloud Firestore backend connection dropouts in iframe and cloud proxy environments
+const isBrowser = typeof window !== 'undefined';
+const firestoreSettings: any = {
+  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
+};
+
+if (isBrowser && typeof indexedDB !== 'undefined') {
+  try {
+    firestoreSettings.localCache = persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    });
+  } catch {
+    // Graceful fallback to default in-memory cache if IndexedDB is restricted
+  }
+}
+
+let firestoreInstance: ReturnType<typeof getFirestore>;
+try {
+  firestoreInstance = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)"
+    ? initializeFirestore(app, firestoreSettings, firebaseConfig.firestoreDatabaseId)
+    : initializeFirestore(app, firestoreSettings);
+} catch {
+  firestoreInstance = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)"
+    ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+    : getFirestore(app);
+}
+
+export const db = firestoreInstance;
 
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: "select_account" });
